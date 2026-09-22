@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ech_postgres
+    environment:
+      POSTGRES_USER: echuser
+      POSTGRES_PASSWORD: echpass
+      POSTGRES_DB: echannelling
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U echuser -d echannelling"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: ech_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      DATABASE_URL: postgresql+psycopg://echuser:echpass@postgres:5432/echannelling
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      TZ: Asia/Colombo
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend:/code
+    command: >
+      sh -c "python -m app.scripts.seed_db &&
+             python -m app.scripts.ingest_kb &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+  frontend:
+    build: ./frontend
+    container_name: ech_frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      
+volumes:
+  pgdata:

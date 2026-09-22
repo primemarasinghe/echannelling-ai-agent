@@ -1,0 +1,22 @@
+[
+  {"name": "Dr. Anura Perera", "specialty": "Dermatology", "qualifications": "MBBS, MD (Dermatology)", "years_experience": 18, "consultation_fee": 3500, "languages": "Sinhala, English", "hospital": "Nawaloka Hospital"},
+  {"name": "Dr. Shanika Fernando", "specialty": "Dermatology", "qualifications": "MBBS, MD, FRCP", "years_experience": 12, "consultation_fee": 4000, "languages": "Sinhala, English, Tamil", "hospital": "Asiri Central Hospital"},
+  {"name": "Dr. Malith Jayasuriya", "specialty": "Dermatology", "qualifications": "MBBS, Dip. Dermatology", "years_experience": 9, "consultation_fee": 3800, "languages": "Sinhala, English", "hospital": "Durdans Hospital"},
+  {"name": "Dr. Ruwan Wickramasinghe", "specialty": "Cardiology", "qualifications": "MBBS, MD (Cardiology), FACC", "years_experience": 22, "consultation_fee": 6000, "languages": "Sinhala, English", "hospital": "Lanka Hospitals"},
+  {"name": "Dr. Nadeesha Silva", "specialty": "Cardiology", "qualifications": "MBBS, MD (Cardiology)", "years_experience": 14, "consultation_fee": 5500, "languages": "Sinhala, English", "hospital": "Asiri Central Hospital"},
+  {"name": "Dr. Kumar Rajendran", "specialty": "Cardiology", "qualifications": "MBBS, MRCP (UK)", "years_experience": 16, "consultation_fee": 5800, "languages": "Tamil, English", "hospital": "Suwasevana Hospital"},
+  {"name": "Dr. Priyani Gunawardena", "specialty": "Paediatrics", "qualifications": "MBBS, DCH, MD (Paediatrics)", "years_experience": 20, "consultation_fee": 3200, "languages": "Sinhala, English", "hospital": "Nawaloka Hospital"},
+  {"name": "Dr. Chaminda Bandara", "specialty": "Paediatrics", "qualifications": "MBBS, MD (Paediatrics)", "years_experience": 11, "consultation_fee": 3000, "languages": "Sinhala, English", "hospital": "Hemas Hospital Wattala"},
+  {"name": "Dr. Tharindu Alwis", "specialty": "Paediatrics", "qualifications": "MBBS, DCH", "years_experience": 7, "consultation_fee": 2800, "languages": "Sinhala, English", "hospital": "Nawaloka Negombo"},
+  {"name": "Dr. Samanthi Weerasinghe", "specialty": "Gynaecology", "qualifications": "MBBS, MS (Obs & Gyn)", "years_experience": 19, "consultation_fee": 4500, "languages": "Sinhala, English", "hospital": "Durdans Hospital"},
+  {"name": "Dr. Fathima Nazeer", "specialty": "Gynaecology", "qualifications": "MBBS, MS, MRCOG", "years_experience": 13, "consultation_fee": 4800, "languages": "Tamil, English, Sinhala", "hospital": "Lanka Hospitals"},
+  {"name": "Dr. Nimal Rathnayake", "specialty": "Orthopaedics", "qualifications": "MBBS, MS (Ortho)", "years_experience": 24, "consultation_fee": 5000, "languages": "Sinhala, English", "hospital": "Nawaloka Hospital"},
+  {"name": "Dr. Janaka Ekanayake", "specialty": "Orthopaedics", "qualifications": "MBBS, MS (Ortho), FRCS", "years_experience": 15, "consultation_fee": 5200, "languages": "Sinhala, English", "hospital": "Suwasevana Hospital"},
+  {"name": "Dr. Dilani Abeysekara", "specialty": "Neurology", "qualifications": "MBBS, MD (Neurology)", "years_experience": 17, "consultation_fee": 6500, "languages": "Sinhala, English", "hospital": "Asiri Central Hospital"},
+  {"name": "Dr. Sunil Peiris", "specialty": "Neurology", "qualifications": "MBBS, MD, FRCP", "years_experience": 26, "consultation_fee": 7000, "languages": "Sinhala, English", "hospital": "Lanka Hospitals"},
+  {"name": "Dr. Roshan de Silva", "specialty": "ENT", "qualifications": "MBBS, MS (ENT)", "years_experience": 12, "consultation_fee": 3600, "languages": "Sinhala, English", "hospital": "Durdans Hospital"},
+  {"name": "Dr. Ayesha Marikkar", "specialty": "ENT", "qualifications": "MBBS, MS (ENT)", "years_experience": 8, "consultation_fee": 3400, "languages": "Tamil, English", "hospital": "Ruhunu Hospital"},
+  {"name": "Dr. Buddhika Senanayake", "specialty": "General Medicine", "qualifications": "MBBS, MD (Medicine)", "years_experience": 21, "consultation_fee": 3000, "languages": "Sinhala, English", "hospital": "Nawaloka Negombo"},
+  {"name": "Dr. Hasitha Kumara", "specialty": "General Medicine", "qualifications": "MBBS, MD", "years_experience": 10, "consultation_fee": 2900, "languages": "Sinhala, English", "hospital": "Hemas Hospital Wattala"},
+  {"name": "Dr. Vishaka Amarasinghe", "specialty": "Ophthalmology", "qualifications": "MBBS, MS (Ophthalmology)", "years_experience": 14, "consultation_fee": 4200, "languages": "Sinhala, English", "hospital": "Ruhunu Hospital"}
+]
