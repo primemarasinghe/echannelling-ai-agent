@@ -14,11 +14,7 @@ const MODE_META = {
 function BotAvatar() {
   return (
     <div className="avatar bot" aria-hidden="true">
-      <svg viewBox="0 0 24 24">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        <line x1="12" y1="9"  x2="12" y2="15" strokeWidth="2.2" />
-        <line x1="9"  y1="12" x2="15" y2="12" strokeWidth="2.2" />
-      </svg>
+      <img src="/avatar.png" alt="" className="avatar-img" draggable="false" />
     </div>
   )
 }

@@ -248,14 +248,17 @@ export default function App() {
 
       <div className="chat-wrapper">
         <main className="chat-main">
+          {/* Ambient background orbs */}
+          <div className="chat-orb chat-orb-1" aria-hidden="true" />
+          <div className="chat-orb chat-orb-2" aria-hidden="true" />
+          <div className="chat-orb chat-orb-3" aria-hidden="true" />
+
           <div className="thread" ref={threadRef}>
 
             {/* ── Empty / landing state ── */}
             {messages.length === 0 && (
               <div className="empty">
-                <div className="empty-logo-wrap">
-                  <img src="/logo.png" alt="eChannelling by SLT MOBITEL" className="empty-logo" draggable="false" />
-                </div>
+                <img src="/mascot.gif" alt="e-Channelling assistant" className="empty-mascot" draggable="false" />
 
                 <h2>Hi! I'm your e-Channelling&nbsp;Assistant</h2>
                 <p className="empty-sub">
@@ -316,11 +319,7 @@ export default function App() {
             {busy && (
               <div className="thinking-row">
                 <div className="avatar bot" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    <line x1="12" y1="9"  x2="12" y2="15" strokeWidth="2.2" />
-                    <line x1="9"  y1="12" x2="15" y2="12" strokeWidth="2.2" />
-                  </svg>
+                  <img src="/avatar.png" alt="" className="avatar-img" draggable="false" />
                 </div>
                 <div className="thinking-bubble">
                   <div className="pulse-wrap" aria-hidden="true">
