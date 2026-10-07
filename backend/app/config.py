@@ -20,6 +20,11 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
 
+    # Google OAuth + JWT auth
+    google_client_id: str = ""
+    jwt_secret: str = "dev-secret-change-in-production"
+    admin_emails: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = False
@@ -27,6 +32,10 @@ class Settings(BaseSettings):
     @property
     def cors_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
 
 
 @lru_cache

@@ -1,14 +1,15 @@
-import { useEffect, useRef } from 'react'
 import type { StoredConversation } from '../hooks/useConversations'
+import type { AuthUser } from '../context/AuthContext'
 
 interface Props {
-  open: boolean
   conversations: StoredConversation[]
   activeId: string
   onSelect: (conv: StoredConversation) => void
   onNew: () => void
   onDelete: (id: string) => void
-  onClose: () => void
+  onHome?: () => void
+  onOpenProfile?: () => void
+  user?: AuthUser | null
 }
 
 function groupConversations(convs: StoredConversation[]) {
@@ -46,126 +47,121 @@ function formatTime(iso: string) {
 }
 
 export default function ChatHistory({
-  open, conversations, activeId, onSelect, onNew, onDelete, onClose,
+  conversations, activeId, onSelect, onNew, onDelete, onHome, onOpenProfile, user,
 }: Props) {
-  const sidebarRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handle(e: MouseEvent) {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
-        onClose()
-      }
-    }
-    document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
-  }, [open, onClose])
-
-  useEffect(() => {
-    if (!open) return
-    function handle(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handle)
-    return () => document.removeEventListener('keydown', handle)
-  }, [open, onClose])
-
   const groups = groupConversations(conversations)
+  const roleLabel = user?.role === 'admin' ? 'Admin' : user?.role === 'doctor' ? 'Doctor' : 'Patient'
 
   return (
-    <>
-      <div className={`hist-overlay${open ? ' open' : ''}`} aria-hidden="true" />
+    <aside className="chat-sidebar" aria-label="Navigation and conversation history">
 
-      <aside
-        ref={sidebarRef}
-        className={`hist-sidebar${open ? ' open' : ''}`}
-        aria-label="Conversation history"
-        aria-hidden={!open}
-      >
-        {/* Header */}
-        <div className="hist-header">
-          <div className="hist-header-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+      {/* ── Back to home ── */}
+      {onHome && (
+        <div className="chat-sb-back-wrap">
+          <button className="hp-sidebar-link chat-sb-back-btn" onClick={onHome} aria-label="Back to home">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            Back to Home
+          </button>
+        </div>
+      )}
+
+      {/* ── Profile card — matches homepage sidebar ── */}
+      <div className="hp-sidebar-profile chat-sb-profile">
+        <button
+          className="chat-sb-avatar-btn"
+          onClick={onOpenProfile}
+          title="Edit profile"
+          aria-label="Edit profile"
+        >
+          {user?.picture
+            ? <img src={user.picture} alt={user?.name ?? 'Profile'} className="hp-sidebar-avatar" referrerPolicy="no-referrer" />
+            : <div className="hp-sidebar-avatar hp-sidebar-avatar-fallback">{user?.name?.[0]?.toUpperCase() ?? '?'}</div>
+          }
+        </button>
+        <div className="hp-sidebar-name">{user?.name ?? 'Guest'}</div>
+        <div className="hp-sidebar-email">{user?.email ?? ''}</div>
+        <span className="chat-sb-role-pill">{roleLabel}</span>
+      </div>
+
+      {/* ── New conversation ── */}
+      <div className="hist-new-wrap">
+        <button className="hist-new-btn" onClick={onNew}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New conversation
+        </button>
+      </div>
+
+      {/* ── History label ── */}
+      <div className="chat-sb-history-label">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        History
+      </div>
+
+      {/* ── Conversation list ── */}
+      <div className="hist-list" role="list">
+        {conversations.length === 0 ? (
+          <div className="hist-empty">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            Conversations
+            <p>No conversations yet</p>
+            <span>Your chat history will appear here</span>
           </div>
-          <button className="hist-close-btn" onClick={onClose} aria-label="Close history">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-
-        {/* New chat */}
-        <div className="hist-new-wrap">
-          <button className="hist-new-btn" onClick={() => { onNew(); onClose() }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            New conversation
-          </button>
-        </div>
-
-        {/* List */}
-        <div className="hist-list" role="list">
-          {conversations.length === 0 ? (
-            <div className="hist-empty">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              <p>No conversations yet</p>
-              <span>Your chat history will appear here</span>
-            </div>
-          ) : (
-            groups.map(group => (
-              <div key={group.label} className="hist-group">
-                <div className="hist-group-label">{group.label}</div>
-                {group.items.map(conv => (
-                  <div
-                    key={conv.id}
-                    role="listitem"
-                    className={`hist-item${conv.id === activeId ? ' active' : ''}`}
+        ) : (
+          groups.map(group => (
+            <div key={group.label} className="hist-group">
+              <div className="hist-group-label">{group.label}</div>
+              {group.items.map(conv => (
+                <div
+                  key={conv.id}
+                  role="listitem"
+                  className={`hist-item${conv.id === activeId ? ' active' : ''}`}
+                >
+                  <button
+                    className="hist-item-btn"
+                    onClick={() => onSelect(conv)}
+                    title={conv.title}
                   >
-                    <button
-                      className="hist-item-btn"
-                      onClick={() => { onSelect(conv); onClose() }}
-                      title={conv.title}
-                    >
-                      <span className="hist-item-title">{conv.title}</span>
-                      <span className="hist-item-time">{formatTime(conv.updatedAt)}</span>
-                    </button>
-                    <button
-                      className="hist-item-delete"
-                      onClick={e => { e.stopPropagation(); onDelete(conv.id) }}
-                      aria-label="Delete conversation"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                        <path d="M10 11v6"/><path d="M14 11v6"/>
-                        <path d="M9 6V4h6v2"/>
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Footer */}
-        {conversations.length > 0 && (
-          <div className="hist-footer">
-            <span>{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</span>
-          </div>
+                    <span className="hist-item-title">{conv.title}</span>
+                    <span className="hist-item-time">{formatTime(conv.updatedAt)}</span>
+                  </button>
+                  <button
+                    className="hist-item-delete"
+                    onClick={e => { e.stopPropagation(); onDelete(conv.id) }}
+                    aria-label="Delete conversation"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      <path d="M10 11v6"/><path d="M14 11v6"/>
+                      <path d="M9 6V4h6v2"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          ))
         )}
-      </aside>
-    </>
+      </div>
+
+      {/* ── Footer count ── */}
+      {conversations.length > 0 && (
+        <div className="hist-footer">
+          <span>{conversations.length} conversation{conversations.length !== 1 ? 's' : ''}</span>
+        </div>
+      )}
+    </aside>
   )
 }

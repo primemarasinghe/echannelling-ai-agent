@@ -352,6 +352,7 @@ def create_booking(confirmation_token: str, session_id: int,
         # Save for error messages after potential rollback.
         session_date_str = s.session_date.isoformat()
         session_time_str = s.start_time.strftime("%I:%M %p")
+        consultant_id    = s.consultant_id
 
         s.booked_slots += 1
         ref = "ECH" + "".join(random.choices(string.digits, k=8))
@@ -375,6 +376,21 @@ def create_booking(confirmation_token: str, session_id: int,
                         f"{dupe2.reference} for this session on "
                         f"{session_date_str} at {session_time_str}. Do not book again.")
             raise
+
+        # Best-effort notification — never breaks the booking flow
+        try:
+            from app.models import DoctorNotification
+            db.add(DoctorNotification(
+                consultant_id=consultant_id,
+                booking_id=b.id,
+                message=(
+                    f"{patient_name} booked appointment "
+                    f"#{b.appointment_number} on {session_date_str} at {session_time_str}"
+                ),
+            ))
+            db.commit()
+        except Exception:
+            pass
 
         out = {"reference": ref, "doctor": s.consultant.name,
                "hospital": s.consultant.hospital.name,
