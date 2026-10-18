@@ -127,7 +127,7 @@ export default function SymptomChecker({ onBack }: Props) {
       const data = await getSymptomQuestions({
         symptoms: selectedSymptoms,
         body_areas: Object.fromEntries(Object.entries(bodyAreas).map(([k,v])=>[k,v as string[]])),
-        patient_name: patientName, age, gender,
+        patient_name: patientName, age, gender, duration,
       })
       setQuestions(data.questions ?? [])
       setPotDiffs(data.potential_differentials ?? [])
@@ -156,7 +156,7 @@ export default function SymptomChecker({ onBack }: Props) {
       const data:AnalysisResult = await analyzeSymptoms({
         symptoms: selectedSymptoms,
         body_areas: Object.fromEntries(Object.entries(bodyAreas).map(([k,v])=>[k,v as string[]])),
-        patient_name: patientName, age, gender, answers: serialized,
+        patient_name: patientName, age, gender, duration, answers: serialized,
       })
       setResult(data); setLabTests(data.lab_tests)
     } catch(e:any) {
