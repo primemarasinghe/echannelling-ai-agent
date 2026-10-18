@@ -41,6 +41,21 @@ def get_current_user(
     return user
 
 
+def get_optional_user(
+    authorization: str = Header(default=""),
+    db: Session = Depends(get_db),
+) -> User | None:
+    token = authorization.removeprefix("Bearer ").strip()
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, _settings.jwt_secret, algorithms=[_ALGORITHM])
+        user_id = int(payload["sub"])
+        return db.get(User, user_id)
+    except (JWTError, KeyError, ValueError):
+        return None
+
+
 def require_admin(user: User = Depends(get_current_user)) -> User:
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")

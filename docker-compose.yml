@@ -33,6 +33,11 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      PAYHERE_MERCHANT_ID: ${PAYHERE_MERCHANT_ID:-}
+      PAYHERE_MERCHANT_SECRET: ${PAYHERE_MERCHANT_SECRET:-}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8000}
+      GMAIL_USER: ${GMAIL_USER:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
     ports:
       - "127.0.0.1:9157:8000"
     volumes:
@@ -49,7 +54,6 @@ services:
     ports:
       - "3000:80"
     volumes:
-      - ./frontend/dist:/usr/share/nginx/html:ro
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       
 volumes:

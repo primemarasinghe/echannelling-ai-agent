@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 import BookingConfirmCard from './BookingConfirmCard'
+import BookingQuestionCard from './BookingQuestionCard'
 import DoctorCards from './DoctorCards'
 import SessionCards from './SessionCards'
 
@@ -34,12 +35,30 @@ export default function Message({
   msg,
   active,
   onViewSources,
-  onConfirmBooking,
   onCancelBooking,
   bookingResolved,
   onCheckAvailability,
   onBookSession,
+  currentUser,
+  onSubmitBookingForm,
 }) {
+  if (msg.role === 'booking_form') {
+    return (
+      <div className="msg-row bot-row">
+        <BotAvatar />
+        <div className="msg-stack">
+          <div className="msg-sender" aria-hidden="true">eChannelling AI</div>
+          <BookingQuestionCard
+            session={msg.session}
+            currentUser={currentUser ?? null}
+            resolved={msg.resolved}
+            onBook={(name, phone, age, forSelf) => onSubmitBookingForm?.(msg.session, name, phone, age, forSelf)}
+          />
+        </div>
+      </div>
+    )
+  }
+
   if (msg.role === 'user') {
     return (
       <div className="msg-row user-row">
@@ -63,7 +82,7 @@ export default function Message({
         <div className="msg-sender" aria-hidden="true">eChannelling AI</div>
 
         <div className={`bubble bot${active ? ' selected' : ''}`}>
-          <ReactMarkdown className="md">{msg.content}</ReactMarkdown>
+          <div className="md"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
         </div>
 
         {/* Doctor cards */}
@@ -87,9 +106,9 @@ export default function Message({
         {msg.pending_booking && (
           <BookingConfirmCard
             booking={msg.pending_booking}
-            onConfirm={onConfirmBooking}
             onCancel={onCancelBooking}
             resolved={bookingResolved}
+            currentUserEmail={currentUser?.email ?? null}
           />
         )}
 

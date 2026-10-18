@@ -1,17 +1,34 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
-from app.routers import auth, catalog, chat, doctors, portal
+from app.routers import auth, catalog, chat, doctors, payment, portal, symptoms
 from app.config import get_settings
 from app.db import Base, engine
 from app import models          # noqa: F401 — registers the tables
 
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    import asyncio
+    from app.scheduler import reminder_loop
+    task = asyncio.create_task(reminder_loop())
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
 app = FastAPI(
     title="e-Channelling AI Agent — RAG Prototype",
     description="Retrieval-grounded assistant over mock data. No live systems.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -49,12 +66,16 @@ with engine.begin() as _conn:
     _conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS address TEXT"))
     _conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS emergency_contact_name VARCHAR(120)"))
     _conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS emergency_contact_phone VARCHAR(30)"))
+    _conn.execute(text("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS patient_email VARCHAR(200)"))
+    _conn.execute(text("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN DEFAULT FALSE"))
 
 app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(catalog.router)
 app.include_router(doctors.router)
 app.include_router(portal.router)
+app.include_router(payment.router)
+app.include_router(symptoms.router)
 
 @app.get("/")
 def root():

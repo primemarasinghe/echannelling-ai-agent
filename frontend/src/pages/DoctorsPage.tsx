@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { getDoctors, getDoctorDetail, getHospitals, registerDoctor, deleteDoctor, updateDoctor } from "../api";
+import { getDoctors, getDoctorDetail, registerDoctor, deleteDoctor, updateDoctor } from "../api";
 
 /* ── Types ─────────────────────────────────────────────────────── */
-interface HospitalOption { id: number; name: string; city: string; }
 interface DoctorSummary {
   id: number; name: string; specialty: string; qualifications: string;
   years_experience: number; consultation_fee: number;
@@ -81,17 +80,10 @@ export default function DoctorsPage() {
   const [city, setCity]                   = useState("");
   const [sort, setSort]                   = useState("name");
   const [showRegister, setShowRegister]   = useState(false);
-  const [hospitals, setHospitals]         = useState<HospitalOption[]>([]);
 
   useEffect(() => {
     getDoctors().then(setDoctors).catch(() => {}).finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    if (showRegister && hospitals.length === 0) {
-      getHospitals().then(setHospitals).catch(() => {});
-    }
-  }, [showRegister]);
 
   function handleDoctorRegistered(newDoctor: DoctorSummary) {
     setDoctors(prev => [...prev, newDoctor].sort((a, b) => a.name.localeCompare(b.name)));
@@ -220,7 +212,6 @@ export default function DoctorsPage() {
 
       {showRegister && (
         <RegisterDoctorModal
-          hospitals={hospitals}
           onClose={() => setShowRegister(false)}
           onSuccess={handleDoctorRegistered}
         />
@@ -313,14 +304,7 @@ function DoctorDetailView({
   const [deleting, setDeleting]                 = useState(false);
   const [deleteError, setDeleteError]           = useState("");
   const [showEdit, setShowEdit]                 = useState(false);
-  const [editHospitals, setEditHospitals]       = useState<HospitalOption[]>([]);
   const [sessionTab, setSessionTab]             = useState<"upcoming" | "past" | "all">("upcoming");
-
-  useEffect(() => {
-    if (showEdit && editHospitals.length === 0) {
-      getHospitals().then(setEditHospitals).catch(() => {});
-    }
-  }, [showEdit]);
 
   /* Must be before any conditional return */
   const sessionMap = useMemo(
@@ -606,7 +590,6 @@ function DoctorDetailView({
       {/* Edit modal */}
       {showEdit && detail && (
         <RegisterDoctorModal
-          hospitals={editHospitals}
           onClose={() => setShowEdit(false)}
           onSuccess={(updated) => { onUpdate(updated); setShowEdit(false); }}
           initialData={detail}
@@ -851,7 +834,7 @@ const LANG_OPTIONS = ["English","Sinhala","Tamil"];
 
 const BLANK_FORM = {
   name: "", email: "", specialty: "", qualifications: [] as string[],
-  years_experience: "", consultation_fee: "", languages: [] as string[], hospital_id: "",
+  years_experience: "", consultation_fee: "", languages: [] as string[],
 };
 
 /* ── MultiSelectDropdown ─────────────────────────────────────── */
@@ -918,9 +901,8 @@ function MultiSelectDropdown({
 }
 
 function RegisterDoctorModal({
-  hospitals, onClose, onSuccess, initialData,
+  onClose, onSuccess, initialData,
 }: {
-  hospitals: HospitalOption[];
   onClose: () => void;
   onSuccess: (d: any) => void;
   initialData?: DoctorDetail;
@@ -935,7 +917,6 @@ function RegisterDoctorModal({
     years_experience: String(initialData.years_experience),
     consultation_fee: String(initialData.consultation_fee),
     languages:        initialData.languages.split(", ").filter(Boolean),
-    hospital_id:      String(initialData.hospital_id),
   } : BLANK_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -971,7 +952,6 @@ function RegisterDoctorModal({
     if (!form.consultation_fee)             e.consultation_fee = "Required";
     else if (Number(form.consultation_fee) <= 0) e.consultation_fee = "Must be > 0";
     if (form.languages.length === 0)        e.languages        = "Select at least one language";
-    if (!form.hospital_id)                  e.hospital_id      = "Select a hospital";
     return e;
   }
 
@@ -990,7 +970,6 @@ function RegisterDoctorModal({
         years_experience: Number(form.years_experience),
         consultation_fee: Number(form.consultation_fee),
         languages:        form.languages.join(", "),
-        hospital_id:      Number(form.hospital_id),
       };
       const result = isEdit
         ? await updateDoctor(initialData!.id, payload)
@@ -1127,24 +1106,6 @@ function RegisterDoctorModal({
               />
               {errors.consultation_fee && <span className="rd-err">{errors.consultation_fee}</span>}
             </div>
-          </div>
-
-          {/* Hospital — full width */}
-          <div className="rd-field rd-full">
-            <label className="rd-label">Assigned Hospital <span className="rd-req">*</span></label>
-            <div className="rd-select-wrap">
-              <select
-                className={`rd-select${errors.hospital_id ? " error" : ""}`}
-                value={form.hospital_id}
-                onChange={e => set("hospital_id", e.target.value)}
-              >
-                <option value="">Select hospital…</option>
-                {hospitals.map(h => (
-                  <option key={h.id} value={h.id}>{h.name} — {h.city}</option>
-                ))}
-              </select>
-            </div>
-            {errors.hospital_id && <span className="rd-err">{errors.hospital_id}</span>}
           </div>
 
           {/* API-level error */}

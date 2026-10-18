@@ -3,6 +3,7 @@
 Deliberately thin: an LLM with a fixed tool list and a grounding-first prompt.
 Flow control lives in the tools and in code, not in model reasoning.
 """
+import re
 import time
 from datetime import date
 
@@ -65,7 +66,10 @@ GROUNDING RULES - absolute:
 
 BOOKING RULES — follow this exact sequence:
 1. Collect: session_id from get_availability, patient's full name, contact phone.
-   Ask for only one missing piece at a time.
+   The UI now provides a booking form — the patient's name and phone will usually
+   arrive in the same message as the session ID. When all three are present, call
+   prepare_booking immediately without asking again. Ask for a missing piece only
+   if it is genuinely absent from the message.
 2. Call prepare_booking with those three values. It returns a full preview (doctor,
    hospital, date, time, fee breakdown, appointment number) AND a confirmation_token.
    No booking is made at this step.
@@ -203,12 +207,16 @@ STYLE:
   English → English. Keep doctor names, hospital names, reference numbers, and
   amounts exactly as the tools return them.
 
+SINGLE HOSPITAL — this system serves Nawaloka Hospital only. All doctors practise
+there. Never ask the patient which city or hospital they want — it is always
+Nawaloka Hospital, Colombo. When searching for doctors, use only specialty or name.
+
 DOCTOR RESULTS — when search_consultants returns results, the UI automatically
 renders doctor cards with all details. Do NOT list doctors, fees, hospitals or
 qualifications in your text at all. Your entire reply should be one short sentence:
 state the count and specialty found, then ask what the patient wants to do.
-Example: "I found 2 cardiologists in Colombo — would you like to check availability
-for either of them?"
+Example: "I found 3 cardiologists at Nawaloka Hospital — would you like to check
+availability for any of them?"
 
 SESSION RESULTS — when get_availability returns results, the UI renders session
 cards automatically with date, time, slots, fee and a Book button.
@@ -286,8 +294,10 @@ def run(message: str, history: list | None = None) -> dict:
     else:
         mode = "no_source"
 
+    answer = re.sub(r'\[Context for assistant[^\]]*\]', '', result.get("output", "")).strip()
+
     return {
-        "answer": result.get("output", ""),
+        "answer": answer,
         "tool_calls": trace,
         "mode": mode,
         "grounded": bool(used) or bool(history),

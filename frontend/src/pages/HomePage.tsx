@@ -20,6 +20,7 @@ interface Doctor {
 interface Props {
   user: AuthUser | null;
   onOpenChat: () => void;
+  onOpenSymptomChecker?: () => void;
   onLogin: () => void;
   onLogout: () => void;
 }
@@ -52,7 +53,7 @@ function fmtRs(n: number) {
 /* ═══════════════════════════════════════════════════════════════
    ROOT PAGE
 ═══════════════════════════════════════════════════════════════ */
-export default function HomePage({ user, onOpenChat, onLogin, onLogout }: Props) {
+export default function HomePage({ user, onOpenChat, onOpenSymptomChecker, onLogin, onLogout }: Props) {
   const [doctors, setDoctors]       = useState<Doctor[]>([]);
   const [scrolled, setScrolled]     = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);

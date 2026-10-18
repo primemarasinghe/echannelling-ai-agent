@@ -5,9 +5,10 @@ import DoctorDashboard from "./pages/DoctorDashboard";
 import LoginPage from "./pages/LoginPage";
 import UserDashboard from "./pages/UserDashboard";
 import HomePage from "./pages/HomePage";
+import SymptomChecker from "./pages/SymptomChecker";
 import ErrorBoundary from "./components/ErrorBoundary";
 
-type AppView = "home" | "chat" | "login";
+type AppView = "home" | "chat" | "login" | "symptoms";
 
 export default function App() {
   const { user, loading, logout } = useAuth();
@@ -22,9 +23,9 @@ export default function App() {
     }
   }, [user]); // eslint-disable-line
 
-  // If logged out while on chat → back to home
+  // If logged out while on chat/symptoms → back to home
   useEffect(() => {
-    if (!user && view === "chat") setView("home");
+    if (!user && (view === "chat" || view === "symptoms")) setView("home");
   }, [user]); // eslint-disable-line
 
   if (loading) return (
@@ -46,9 +47,18 @@ export default function App() {
     <LoginPage onBack={() => { setView("home"); setReturnTo("home"); }} />
   );
 
+  if (view === "symptoms" && user) return (
+    <ErrorBoundary>
+      <SymptomChecker onBack={() => setView("home")} />
+    </ErrorBoundary>
+  );
+
   if (view === "chat" && user) return (
     <ErrorBoundary>
-      <UserDashboard onHome={() => setView("home")} />
+      <UserDashboard
+        onHome={() => setView("home")}
+        onSymptomChecker={() => requireAuth("symptoms")}
+      />
     </ErrorBoundary>
   );
 
@@ -56,6 +66,7 @@ export default function App() {
     <HomePage
       user={user}
       onOpenChat={() => requireAuth("chat")}
+      onOpenSymptomChecker={() => requireAuth("symptoms")}
       onLogin={() => { setReturnTo("home"); setView("login"); }}
       onLogout={logout}
     />

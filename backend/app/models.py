@@ -80,13 +80,15 @@ class Booking(Base):
     session_id: Mapped[int] = mapped_column(ForeignKey("sessions.id"))
     patient_name: Mapped[str] = mapped_column(String(120))
     patient_phone: Mapped[str] = mapped_column(String(30), index=True)
+    patient_email: Mapped[str | None] = mapped_column(String(200), nullable=True)
     appointment_number: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(20), default="CONFIRMED")
     amount: Mapped[float] = mapped_column(Float)
     rescheduled: Mapped[bool] = mapped_column(Boolean, default=False)
+    reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    session: Mapped[Session] = relationship()
+    session: Mapped[Session] = relationship(lazy="select")
 
 
 class KBChunk(Base):

@@ -86,3 +86,26 @@ export const getPortalNotifications = ()          => req('/api/portal/notificati
 export const markNotificationsRead  = ()          => req('/api/portal/notifications/read-all', { method: 'PATCH' })
 export const deleteDoctor     = (id)    => req(`/api/doctors/${id}`, { method: 'DELETE' })
 export const updateDoctor     = (id, body) => req(`/api/doctors/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+
+export const getSymptomQuestions = (body) =>
+  req('/api/symptoms/questions', { method: 'POST', body: JSON.stringify(body) })
+
+export const analyzeSymptoms = (body) =>
+  req('/api/symptoms/analyze', { method: 'POST', body: JSON.stringify(body) })
+
+export const initiatePayment  = (confirmationToken, patientName) =>
+  req('/api/payment/initiate', {
+    method: 'POST',
+    body: JSON.stringify({ confirmation_token: confirmationToken, patient_name: patientName }),
+  })
+
+export const completePayment  = (confirmationToken, orderId, paymentId = null, patientEmail = null) =>
+  req('/api/payment/complete', {
+    method: 'POST',
+    body: JSON.stringify({
+      confirmation_token: confirmationToken,
+      order_id: orderId,
+      payment_id: paymentId,
+      patient_email: patientEmail,
+    }),
+  })

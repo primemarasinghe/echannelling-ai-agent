@@ -89,7 +89,7 @@ function RefreshIcon() {
   );
 }
 
-export default function UserDashboard({ onHome }: { onHome?: () => void }) {
+export default function UserDashboard({ onHome, onSymptomChecker }: { onHome?: () => void; onSymptomChecker?: () => void }) {
   const sessionRef = useRef(newSessionId());
 
   const [messages,          setMessages]          = useState<any[]>([]);
@@ -116,9 +116,8 @@ export default function UserDashboard({ onHome }: { onHome?: () => void }) {
   }, [resetKey]);
 
   useEffect(() => {
-    if (messages.length > 0) {
-      save(sessionRef.current, messages);
-    }
+    const saveable = messages.filter((m: any) => m.role !== "booking_form");
+    if (saveable.length > 0) save(sessionRef.current, saveable);
   }, [messages, save]);
 
   async function doSubmit(text: string) {
@@ -226,6 +225,7 @@ export default function UserDashboard({ onHome }: { onHome?: () => void }) {
           onDelete={remove}
           onHome={onHome}
           onOpenProfile={() => setProfileOpen(true)}
+          onSymptomChecker={onSymptomChecker}
           user={user}
         />
 
@@ -280,15 +280,29 @@ export default function UserDashboard({ onHome }: { onHome?: () => void }) {
                 msg={m}
                 active={evidenceIdx === i && evidenceOpen}
                 onViewSources={() => handleViewSources(i)}
-                onConfirmBooking={() => doSubmit("Yes, please confirm the booking")}
                 onCancelBooking={() => doSubmit("No, cancel that")}
                 bookingResolved={pendingBookingIdx !== i}
                 onCheckAvailability={(doctor: any) =>
                   doSubmit(`Check availability for ${doctor.name} (ID ${doctor.consultant_id})`)
                 }
                 onBookSession={(session: any) =>
-                  doSubmit(`I'd like to book session ID ${session.session_id} — ${session.day}, ${session.date} at ${session.start_time}`)
+                  setMessages(prev => [...prev, { role: "booking_form", session, resolved: false }])
                 }
+                currentUser={user}
+                onSubmitBookingForm={(session: any, name: string, phone: string, age: string, forSelf: boolean) => {
+                  setMessages(prev => prev.map((msg: any) =>
+                    msg.role === "booking_form" && msg.session?.session_id === session.session_id
+                      ? { ...msg, resolved: true }
+                      : msg
+                  ));
+                  const ageNote  = age ? `, age ${age}` : "";
+                  const selfNote = forSelf ? " (booking for myself)" : "";
+                  doSubmit(
+                    `I'd like to book session ID ${session.session_id} — ` +
+                    `${session.day}, ${session.date} at ${session.start_time}. ` +
+                    `Patient name: ${name}${ageNote}, phone: ${phone}${selfNote}`
+                  );
+                }}
               />
             ))}
 
@@ -353,6 +367,7 @@ export default function UserDashboard({ onHome }: { onHome?: () => void }) {
           <ProfileModal user={user} onClose={() => setProfileOpen(false)} />
         )}
       </AnimatePresence>
+
     </div>
   );
 }

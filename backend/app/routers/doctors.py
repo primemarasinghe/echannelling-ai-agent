@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import delete as sql_delete, func, select
 from sqlalchemy.orm import Session as OrmSession, joinedload
 
+from app.config import get_settings
 from app.db import get_db
 from app.models import Booking, Consultant, Session, Hospital
 from app.services.auth_service import require_admin
@@ -22,7 +23,6 @@ class CreateDoctorBody(BaseModel):
     years_experience: int
     consultation_fee: float
     languages: str
-    hospital_id: int
 
 
 class UpdateDoctorBody(BaseModel):
@@ -33,7 +33,6 @@ class UpdateDoctorBody(BaseModel):
     years_experience: Optional[int] = None
     consultation_fee: Optional[float] = None
     languages: Optional[str] = None
-    hospital_id: Optional[int] = None
 
 
 # ── Hospitals list (used by register form) ────────────────────────────────────
@@ -53,9 +52,12 @@ def create_doctor(
     db: OrmSession = Depends(get_db),
     _admin=Depends(require_admin),
 ):
-    hospital = db.get(Hospital, body.hospital_id)
+    hospital_name = get_settings().hospital_name
+    hospital = db.execute(
+        select(Hospital).where(Hospital.name == hospital_name)
+    ).scalar_one_or_none()
     if not hospital:
-        raise HTTPException(status_code=400, detail="Hospital not found")
+        raise HTTPException(status_code=400, detail=f"Configured hospital '{hospital_name}' not found in database")
 
     if body.email:
         if not body.email.lower().endswith("@gmail.com"):
@@ -74,7 +76,7 @@ def create_doctor(
         years_experience=body.years_experience,
         consultation_fee=body.consultation_fee,
         languages=body.languages,
-        hospital_id=body.hospital_id,
+        hospital_id=hospital.id,
     )
     db.add(consultant)
     db.commit()
@@ -129,11 +131,6 @@ def update_doctor(
     if body.years_experience is not None: consultant.years_experience = body.years_experience
     if body.consultation_fee is not None: consultant.consultation_fee = body.consultation_fee
     if body.languages is not None:        consultant.languages        = body.languages
-    if body.hospital_id is not None:
-        hosp = db.get(Hospital, body.hospital_id)
-        if not hosp:
-            raise HTTPException(status_code=400, detail="Hospital not found")
-        consultant.hospital_id = body.hospital_id
 
     db.commit()
     db.refresh(consultant)
@@ -198,9 +195,15 @@ def delete_doctor(
 
 @router.get("")
 def list_doctors(db: OrmSession = Depends(get_db)):
+    hospital_name = get_settings().hospital_name
+    hospital = db.execute(
+        select(Hospital).where(Hospital.name == hospital_name)
+    ).scalar_one_or_none()
+    hospital_id = hospital.id if hospital else None
     rows = db.execute(
         select(Consultant)
         .options(joinedload(Consultant.hospital))
+        .where(Consultant.hospital_id == hospital_id)
         .order_by(Consultant.name)
     ).unique().scalars().all()
 

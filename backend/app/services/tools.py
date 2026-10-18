@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
+from app.config import get_settings
 from app.db import SessionLocal
 from app.models import Booking, Consultant, Hospital, Session
 from app.services.retrieval import retrieve
@@ -76,22 +77,22 @@ def search_knowledge_base(query: str) -> str:
 class ConsultantInput(BaseModel):
     specialty: str | None = Field(default=None, description="e.g. Dermatology, Cardiology")
     name: str | None = Field(default=None, description="Full or partial doctor name")
-    city: str | None = Field(default=None, description="e.g. Colombo, Kandy, Negombo")
-    hospital: str | None = Field(default=None, description="Hospital name")
 
 
-def search_consultants(specialty=None, name=None, city=None, hospital=None) -> str:
-    args = {"specialty": specialty, "name": name, "city": city, "hospital": hospital}
+def search_consultants(specialty=None, name=None) -> str:
+    args = {"specialty": specialty, "name": name}
     with SessionLocal() as db:
-        q = select(Consultant).options(joinedload(Consultant.hospital))
+        hosp = db.execute(
+            select(Hospital).where(Hospital.name == get_settings().hospital_name)
+        ).scalar_one_or_none()
+        hosp_id = hosp.id if hosp else None
+        q = (select(Consultant)
+             .options(joinedload(Consultant.hospital))
+             .where(Consultant.hospital_id == hosp_id))
         if specialty:
             q = q.where(Consultant.specialty.ilike(f"%{specialty}%"))
         if name:
             q = q.where(Consultant.name.ilike(f"%{name}%"))
-        if hospital:
-            q = q.join(Hospital).where(Hospital.name.ilike(f"%{hospital}%"))
-        if city:
-            q = q.join(Hospital).where(Hospital.city.ilike(f"%{city}%"))
 
         rows = db.execute(q.limit(10)).unique().scalars().all()
         if not rows:

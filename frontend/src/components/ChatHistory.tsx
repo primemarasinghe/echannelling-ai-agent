@@ -9,6 +9,7 @@ interface Props {
   onDelete: (id: string) => void
   onHome?: () => void
   onOpenProfile?: () => void
+  onSymptomChecker?: () => void
   user?: AuthUser | null
 }
 
@@ -47,7 +48,7 @@ function formatTime(iso: string) {
 }
 
 export default function ChatHistory({
-  conversations, activeId, onSelect, onNew, onDelete, onHome, onOpenProfile, user,
+  conversations, activeId, onSelect, onNew, onDelete, onHome, onOpenProfile, onSymptomChecker, user,
 }: Props) {
   const groups = groupConversations(conversations)
   const roleLabel = user?.role === 'admin' ? 'Admin' : user?.role === 'doctor' ? 'Doctor' : 'Patient'
@@ -96,6 +97,16 @@ export default function ChatHistory({
           </svg>
           New conversation
         </button>
+
+        {onSymptomChecker && (
+          <button className="hist-symptom-btn" onClick={onSymptomChecker}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            Symptom Analyser
+          </button>
+        )}
       </div>
 
       {/* ── History label ── */}
