@@ -35,6 +35,7 @@ class DoctorCard(BaseModel):
 
 
 class PendingBooking(BaseModel):
+    confirmation_token: str
     session_id: int
     doctor: str
     hospital: str

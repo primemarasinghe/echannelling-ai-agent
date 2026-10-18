@@ -556,3 +556,7 @@ OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # optional
 - **Grounding guarantees answers match the knowledge base, not that the knowledge base is correct.** Contact details and fees must be verified against the live eChannelling service before any real deployment.
 
 - **Comparative answers ("most slots", "cheapest") are correct but the model does not reliably state that the comparison covers only the results shown.** The UI compensates by captioning session and doctor cards with the window and count ("Showing available sessions, 22 Sep – 6 Oct", "Showing 3 doctors").
+
+- **Tamil support has not been tested.** The knowledge base is English-only; Tamil queries will behave similarly to Singlish (lower retrieval scores, possible zero-result cases for short idiomatic phrases). A separate assessment is needed before advertising Tamil support.
+
+- **Sinhala/Singlish support is partial.** Reply language now follows the user's script (Sinhala script → Sinhala; Singlish → English) after a 2026-09-23 prompt fix, but Singlish inputs occasionally receive Sinhala replies. Card labels (Doctor, Hospital, Date, Booking Preview, etc.) are hardcoded in English — i18n for card labels is deferred (requires backend `lang` field + frontend i18n map). Sinhala retrieval accuracy is lower than English (average score 0.43 vs 0.66) and pure-Sinhala queries without embedded English keywords may retrieve wrong documents; adding bilingual KB chunks is deferred. See `docs/sinhala_assessment.md` for full findings.

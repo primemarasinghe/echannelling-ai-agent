@@ -20,6 +20,23 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
 
+    # Google OAuth + JWT auth
+    google_client_id: str = ""
+    jwt_secret: str = "dev-secret-change-in-production"
+    admin_emails: str = ""
+
+    # Single-hospital mode: all doctors are assigned to this hospital
+    hospital_name: str = "Nawaloka Hospital"
+
+    # PayHere sandbox payment gateway
+    payhere_merchant_id: str = ""
+    payhere_merchant_secret: str = ""
+    app_base_url: str = "http://localhost:8000"
+
+    # Gmail SMTP — use an App Password, not your regular Gmail password
+    gmail_user: str = ""
+    gmail_app_password: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = False
@@ -27,6 +44,10 @@ class Settings(BaseSettings):
     @property
     def cors_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
 
 
 @lru_cache

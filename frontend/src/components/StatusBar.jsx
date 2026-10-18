@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 function StatusRow({ label, ok, text }) {
   return (
@@ -28,7 +29,8 @@ function StatRow({ label, value, accent }) {
   )
 }
 
-export default function StatusBar({ health, stats, onHistoryToggle, historyOpen }) {
+export default function StatusBar({ health, stats, onHome }) {
+  const { user, logout } = useAuth()
   const [open, setOpen] = useState(false)
   const panelRef = useRef(null)
   const btnRef   = useRef(null)
@@ -57,28 +59,25 @@ export default function StatusBar({ health, stats, onHistoryToggle, historyOpen 
 
   return (
     <header className="statusbar">
-      {/* History toggle */}
-      <button
-        className={`sb-hist-btn${historyOpen ? ' active' : ''}`}
-        onClick={onHistoryToggle}
-        aria-label="Conversation history"
-        aria-expanded={historyOpen}
-      >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-      </button>
+      {/* Home button */}
+      {onHome && (
+        <button
+          className="sb-home-btn"
+          onClick={onHome}
+          aria-label="Back to home"
+          title="Back to home"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </button>
+      )}
 
       {/* Brand */}
       <div className="brand">
-        <img
-          src="/logo.png"
-          alt="eChannelling by SLT MOBITEL"
-          className="brand-logo"
-          draggable="false"
-        />
-        <span className="brand-ai-tag">AI Assistant</span>
+        <span className="brand-wordmark">eChannelling<span className="brand-wordmark-ai">AI</span></span>
       </div>
 
       <div className="spacer" />
@@ -149,6 +148,23 @@ export default function StatusBar({ health, stats, onHistoryToggle, historyOpen 
           </div>
         )}
       </div>
+
+      {/* User avatar + sign out */}
+      {user && (
+        <div className="sb-user">
+          {user.picture
+            ? <img src={user.picture} alt={user.name} className="sb-user-avatar" referrerPolicy="no-referrer" />
+            : <div className="sb-user-avatar sb-user-fallback">{user.name?.[0]}</div>
+          }
+          <button className="sb-signout" onClick={logout} title="Sign out">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      )}
     </header>
   )
 }

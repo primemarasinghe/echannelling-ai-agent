@@ -1,6 +1,9 @@
+import logging
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Request
+
+_log = logging.getLogger(__name__)
 from sqlalchemy import select
 from sqlalchemy.orm import Session as OrmSession
 
@@ -125,8 +128,8 @@ def chat(req: ChatRequest, request: Request, db: OrmSession = Depends(get_db)):
             if raw:
                 try:
                     doctor_cards = [DoctorCard(**d) for d in raw]
-                except Exception:
-                    pass
+                except Exception as e:
+                    _log.error("DoctorCard parse error: %s  sample=%r", e, raw[:1])
             break
 
     # Extract pending_booking if prepare_booking ran this turn.

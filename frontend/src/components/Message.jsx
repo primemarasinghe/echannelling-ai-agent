@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 import BookingConfirmCard from './BookingConfirmCard'
+import BookingQuestionCard from './BookingQuestionCard'
 import DoctorCards from './DoctorCards'
 import SessionCards from './SessionCards'
 
@@ -14,11 +15,7 @@ const MODE_META = {
 function BotAvatar() {
   return (
     <div className="avatar bot" aria-hidden="true">
-      <svg viewBox="0 0 24 24">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        <line x1="12" y1="9"  x2="12" y2="15" strokeWidth="2.2" />
-        <line x1="9"  y1="12" x2="15" y2="12" strokeWidth="2.2" />
-      </svg>
+      <img src="/avatar.png" alt="" className="avatar-img" draggable="false" />
     </div>
   )
 }
@@ -38,12 +35,30 @@ export default function Message({
   msg,
   active,
   onViewSources,
-  onConfirmBooking,
   onCancelBooking,
   bookingResolved,
   onCheckAvailability,
   onBookSession,
+  currentUser,
+  onSubmitBookingForm,
 }) {
+  if (msg.role === 'booking_form') {
+    return (
+      <div className="msg-row bot-row">
+        <BotAvatar />
+        <div className="msg-stack">
+          <div className="msg-sender" aria-hidden="true">eChannelling AI</div>
+          <BookingQuestionCard
+            session={msg.session}
+            currentUser={currentUser ?? null}
+            resolved={msg.resolved}
+            onBook={(name, phone, age, forSelf) => onSubmitBookingForm?.(msg.session, name, phone, age, forSelf)}
+          />
+        </div>
+      </div>
+    )
+  }
+
   if (msg.role === 'user') {
     return (
       <div className="msg-row user-row">
@@ -67,7 +82,7 @@ export default function Message({
         <div className="msg-sender" aria-hidden="true">eChannelling AI</div>
 
         <div className={`bubble bot${active ? ' selected' : ''}`}>
-          <ReactMarkdown className="md">{msg.content}</ReactMarkdown>
+          <div className="md"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
         </div>
 
         {/* Doctor cards */}
@@ -91,9 +106,9 @@ export default function Message({
         {msg.pending_booking && (
           <BookingConfirmCard
             booking={msg.pending_booking}
-            onConfirm={onConfirmBooking}
             onCancel={onCancelBooking}
             resolved={bookingResolved}
+            currentUserEmail={currentUser?.email ?? null}
           />
         )}
 

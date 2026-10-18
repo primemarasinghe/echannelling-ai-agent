@@ -29,6 +29,7 @@ class Consultant(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120), index=True)
+    email: Mapped[str | None] = mapped_column(String(200), nullable=True, unique=True, index=True)
     specialty: Mapped[str] = mapped_column(String(80), index=True)
     qualifications: Mapped[str] = mapped_column(String(160))
     years_experience: Mapped[int] = mapped_column(Integer)
@@ -79,13 +80,15 @@ class Booking(Base):
     session_id: Mapped[int] = mapped_column(ForeignKey("sessions.id"))
     patient_name: Mapped[str] = mapped_column(String(120))
     patient_phone: Mapped[str] = mapped_column(String(30), index=True)
+    patient_email: Mapped[str | None] = mapped_column(String(200), nullable=True)
     appointment_number: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(20), default="CONFIRMED")
     amount: Mapped[float] = mapped_column(Float)
     rescheduled: Mapped[bool] = mapped_column(Boolean, default=False)
+    reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    session: Mapped[Session] = relationship()
+    session: Mapped[Session] = relationship(lazy="select")
 
 
 class KBChunk(Base):
@@ -120,6 +123,46 @@ class Conversation(Base):
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     context_note: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+
+
+class User(Base):
+    """Authenticated user — Google Sign-In or email/password."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    google_id: Mapped[str | None] = mapped_column(String(120), unique=True, index=True, nullable=True)
+    email: Mapped[str] = mapped_column(String(200), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    picture: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    reset_token: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    reset_token_expiry: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    role: Mapped[str] = mapped_column(String(20), default="user")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Patient profile fields
+    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    gender: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    blood_type: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    emergency_contact_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    emergency_contact_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+
+
+class DoctorNotification(Base):
+    """In-app notification created whenever a patient books a doctor's session."""
+
+    __tablename__ = "doctor_notifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    consultant_id: Mapped[int] = mapped_column(ForeignKey("consultants.id"), index=True)
+    booking_id: Mapped[int | None] = mapped_column(ForeignKey("bookings.id"), nullable=True)
+    message: Mapped[str] = mapped_column(Text)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 class KnowledgeGap(Base):

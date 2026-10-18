@@ -33,6 +33,15 @@ def main():
         print("[kb] no documents found")
         return
 
+    # Skip re-embedding if chunks already exist — avoids blocking startup
+    # when the OpenAI key is unavailable. Run with FORCE_INGEST=1 to rebuild.
+    import os
+    with SessionLocal() as db:
+        existing = db.query(KBChunk).count()
+    if existing > 0 and not os.getenv("FORCE_INGEST"):
+        print(f"[kb] {existing} chunks already present, skipping (set FORCE_INGEST=1 to rebuild)")
+        return
+
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
@@ -53,7 +62,6 @@ def main():
 
     print(f"[kb] {len(files)} documents produced {len(records)} chunks")
 
-    # One batched API call for every chunk.
     print("[kb] requesting embeddings from OpenAI...")
     vectors = embed_documents([r["content"] for r in records])
     print(f"[kb] received {len(vectors)} vectors of {len(vectors[0])} dimensions")

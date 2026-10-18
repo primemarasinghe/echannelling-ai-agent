@@ -1,10 +1,3 @@
 [
-  {"name": "Nawaloka Hospital", "city": "Colombo", "address": "23 Deshamanya H K Dharmadasa Mawatha, Colombo 02", "phone": "011 5577111"},
-  {"name": "Asiri Central Hospital", "city": "Colombo", "address": "114 Norris Canal Road, Colombo 10", "phone": "011 4665500"},
-  {"name": "Durdans Hospital", "city": "Colombo", "address": "3 Alfred Place, Colombo 03", "phone": "011 2140000"},
-  {"name": "Lanka Hospitals", "city": "Colombo", "address": "578 Elvitigala Mawatha, Colombo 05", "phone": "011 5430000"},
-  {"name": "Hemas Hospital Wattala", "city": "Wattala", "address": "Hendala Road, Wattala", "phone": "011 7888888"},
-  {"name": "Nawaloka Negombo", "city": "Negombo", "address": "Colombo Road, Negombo", "phone": "031 2222222"},
-  {"name": "Suwasevana Hospital", "city": "Kandy", "address": "1 Kandy Road, Kandy", "phone": "081 2233444"},
-  {"name": "Ruhunu Hospital", "city": "Galle", "address": "Wakwella Road, Galle", "phone": "091 2245566"}
+  {"name": "Nawaloka Hospital", "city": "Colombo", "address": "23 Deshamanya H K Dharmadasa Mawatha, Colombo 02", "phone": "011 5577111"}
 ]

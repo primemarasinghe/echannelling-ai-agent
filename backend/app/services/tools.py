@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
+from app.config import get_settings
 from app.db import SessionLocal
 from app.models import Booking, Consultant, Hospital, Session
 from app.services.retrieval import retrieve
@@ -76,22 +77,22 @@ def search_knowledge_base(query: str) -> str:
 class ConsultantInput(BaseModel):
     specialty: str | None = Field(default=None, description="e.g. Dermatology, Cardiology")
     name: str | None = Field(default=None, description="Full or partial doctor name")
-    city: str | None = Field(default=None, description="e.g. Colombo, Kandy, Negombo")
-    hospital: str | None = Field(default=None, description="Hospital name")
 
 
-def search_consultants(specialty=None, name=None, city=None, hospital=None) -> str:
-    args = {"specialty": specialty, "name": name, "city": city, "hospital": hospital}
+def search_consultants(specialty=None, name=None) -> str:
+    args = {"specialty": specialty, "name": name}
     with SessionLocal() as db:
-        q = select(Consultant).options(joinedload(Consultant.hospital))
+        hosp = db.execute(
+            select(Hospital).where(Hospital.name == get_settings().hospital_name)
+        ).scalar_one_or_none()
+        hosp_id = hosp.id if hosp else None
+        q = (select(Consultant)
+             .options(joinedload(Consultant.hospital))
+             .where(Consultant.hospital_id == hosp_id))
         if specialty:
             q = q.where(Consultant.specialty.ilike(f"%{specialty}%"))
         if name:
             q = q.where(Consultant.name.ilike(f"%{name}%"))
-        if hospital:
-            q = q.join(Hospital).where(Hospital.name.ilike(f"%{hospital}%"))
-        if city:
-            q = q.join(Hospital).where(Hospital.city.ilike(f"%{city}%"))
 
         rows = db.execute(q.limit(10)).unique().scalars().all()
         if not rows:
@@ -352,6 +353,7 @@ def create_booking(confirmation_token: str, session_id: int,
         # Save for error messages after potential rollback.
         session_date_str = s.session_date.isoformat()
         session_time_str = s.start_time.strftime("%I:%M %p")
+        consultant_id    = s.consultant_id
 
         s.booked_slots += 1
         ref = "ECH" + "".join(random.choices(string.digits, k=8))
@@ -375,6 +377,21 @@ def create_booking(confirmation_token: str, session_id: int,
                         f"{dupe2.reference} for this session on "
                         f"{session_date_str} at {session_time_str}. Do not book again.")
             raise
+
+        # Best-effort notification — never breaks the booking flow
+        try:
+            from app.models import DoctorNotification
+            db.add(DoctorNotification(
+                consultant_id=consultant_id,
+                booking_id=b.id,
+                message=(
+                    f"{patient_name} booked appointment "
+                    f"#{b.appointment_number} on {session_date_str} at {session_time_str}"
+                ),
+            ))
+            db.commit()
+        except Exception:
+            pass
 
         out = {"reference": ref, "doctor": s.consultant.name,
                "hospital": s.consultant.hospital.name,
