@@ -86,6 +86,7 @@ export default function SymptomChecker({ onBack }: Props) {
   // Step 2
   const [bodyAreas,    setBodyAreas]    = useState<Record<string,BodyRegion[]>>({})
   const [symIdx,       setSymIdx]       = useState(0)
+  const [hoveredReg,   setHoveredReg]   = useState<BodyRegion | null>(null)
   // Step 3
   const [patientName,  setPatientName]  = useState(user?.name ?? '')
   const [age,          setAge]          = useState('')
@@ -221,12 +222,10 @@ export default function SymptomChecker({ onBack }: Props) {
         <Header onBack={()=>setStep(0)}/>
         <Progress step={1}/>
         <div className="sc-body">
-          <div className="sc-section-head">
+          <div className="sc-section-center">
             <div className="sc-num">02</div>
-            <div>
-              <div className="sc-title">Select Body Area</div>
-              <div className="sc-sub">ශරීරයේ ස්ථාන සලකුණු කරන්න</div>
-            </div>
+            <div className="sc-title">Select Body Area</div>
+            <div className="sc-sub">ශරීරයේ ස්ථාන සලකුණු කරන්න</div>
           </div>
 
           {/* symptom tabs */}
@@ -246,18 +245,39 @@ export default function SymptomChecker({ onBack }: Props) {
           <div className="sc-body-layout">
             {/* Selected areas panel — LEFT */}
             <div className="sc-areas-col">
-              <div className="sc-areas-title">Selected areas</div>
+              <div className="sc-areas-title">
+                Selected areas
+                {areas.length>0&&<span className="sc-areas-count">{areas.length}</span>}
+              </div>
               {areas.length===0
-                ? <div className="sc-areas-empty">No area selected yet.<br/>Click the body diagram.</div>
-                : (
-                  <div className="sc-area-chips">
+                ? (
+                  <div className="sc-areas-empty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+                      strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                      <circle cx="12" cy="9" r="2.5"/>
+                    </svg>
+                    No area selected yet
+                    <span>Click the body diagram</span>
+                  </div>
+                ) : (
+                  <div className="sc-area-cards">
                     {areas.map(a=>{
                       const meta = REGION_META.find(r=>r.id===a)
                       return (
-                        <span key={a} className="sc-chip">
-                          {meta?.label??a}
-                          <button onClick={()=>toggleArea(sym,a)}>×</button>
-                        </span>
+                        <div key={a} className="sc-area-card">
+                          <div className="sc-area-card-dot"/>
+                          <div className="sc-area-card-body">
+                            <div className="sc-area-card-name">{meta?.label??a}</div>
+                            <div className="sc-area-card-si">{meta?.si}</div>
+                          </div>
+                          <button className="sc-area-card-rm" onClick={()=>toggleArea(sym,a)} aria-label="Remove">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                              strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        </div>
                       )
                     })}
                   </div>
@@ -285,14 +305,50 @@ export default function SymptomChecker({ onBack }: Props) {
               )}
             </div>
 
-            {/* Body map — RIGHT */}
+            {/* Body map — MIDDLE */}
             <div className="sc-map-col">
               <div className="sc-map-label">Tap a region for: <strong>{sym}</strong></div>
               <BodyMap
                 selected={areas}
                 onToggle={r=>toggleArea(sym,r)}
                 focus={SYMPTOM_FOCUS[sym]}
+                onHover={setHoveredReg}
               />
+            </div>
+
+            {/* Hover info panel — RIGHT */}
+            <div className="sc-hover-col">
+              <div className="sc-hover-panel">
+                {hoveredReg ? (() => {
+                  const m   = REGION_META.find(r => r.id === hoveredReg)
+                  const sel = areas.includes(hoveredReg)
+                  return (
+                    <>
+                      <div className={`sc-hover-indicator${sel ? ' sel' : ''}`}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                          strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                      </div>
+                      <div className="sc-hover-name">{m?.label ?? hoveredReg}</div>
+                      <div className="sc-hover-si">{m?.si}</div>
+                      {sel
+                        ? <div className="sc-hover-badge sel">✓ Selected</div>
+                        : <div className="sc-hover-badge">Tap to select</div>
+                      }
+                    </>
+                  )
+                })() : (
+                  <div className="sc-hover-empty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+                      strokeLinecap="round" strokeLinejoin="round" width="28" height="28">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                      <path d="M12 8v4m0 4h.01"/>
+                    </svg>
+                    <span>Hover over a body region</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
