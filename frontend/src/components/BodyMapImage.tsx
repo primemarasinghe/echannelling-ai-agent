@@ -96,6 +96,8 @@ const MIN_ZOOM = 0.5, MAX_ZOOM = 4, STEP = 0.5
 const FRONT_OFFSET = -20   // px shift right to align front image body
 
 export default function BodyMapImage({ selected, onToggle, focus, onHover }: Props) {
+  const devMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('draw')
+
   const [view,      setView]      = useState<'front' | 'back'>('front')
   const [hovReg,    setHovReg]    = useState<BodyRegion | null>(null)
   const [flashRegs, setFlashRegs] = useState<Set<BodyRegion>>(new Set())
@@ -280,10 +282,12 @@ export default function BodyMapImage({ selected, onToggle, focus, onHover }: Pro
           {debug ? '✕ Hide' : '⊙ Regions'}
         </button>
 
-        <button className={`bmi-dbg-btn${drawMode ? ' active' : ''}`} onClick={toggleDrawMode}
-          style={drawMode ? {background:'#fef3c7',borderColor:'#f59e0b',color:'#b45309'} : {}}>
-          {drawMode ? '✕ Stop Drawing' : '✏ Draw Region'}
-        </button>
+        {devMode && (
+          <button className={`bmi-dbg-btn${drawMode ? ' active' : ''}`} onClick={toggleDrawMode}
+            style={drawMode ? {background:'#fef3c7',borderColor:'#f59e0b',color:'#b45309'} : {}}>
+            {drawMode ? '✕ Stop Drawing' : '✏ Draw Region'}
+          </button>
+        )}
       </div>
 
       {/* ── Label bar — debug coords only ───────────────── */}
