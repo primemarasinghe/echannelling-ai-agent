@@ -165,6 +165,22 @@ class DoctorNotification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class LabTestBooking(Base):
+    __tablename__ = "lab_test_bookings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    reference: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    patient_name: Mapped[str] = mapped_column(String(120))
+    patient_phone: Mapped[str] = mapped_column(String(30), index=True)
+    patient_email: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    tests_json: Mapped[str] = mapped_column(Text)  # JSON: [{code,name,price}]
+    total_amount: Mapped[float] = mapped_column(Float)
+    status: Mapped[str] = mapped_column(String(20), default="PENDING")
+    order_id: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
 class KnowledgeGap(Base):
     """Queries where the knowledge base returned no relevant results.
 

@@ -94,8 +94,12 @@ export default function LoginPage({ onBack }: { onBack?: () => void }) {
     if (!email) { setError("Please enter your email address."); return; }
     setLoading(true);
     try {
-      await forgotPassword(email);
-      setForgotSent(true);
+      const res = await forgotPassword(email);
+      if (res?.google_account) {
+        setError("This account uses Google Sign-In. Please use the \"Sign in with Google\" button instead.");
+      } else {
+        setForgotSent(true);
+      }
     } catch (err: any) {
       setError(err.message ?? "Something went wrong. Please try again.");
     } finally {

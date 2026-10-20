@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { getBookings, getGaps, getHealth, getStats } from "../api";
+import { getBookings, getGaps, getHealth, getLabBookings, getStats } from "../api";
 import { useAuth } from "../context/AuthContext";
 import DoctorsPage from "./DoctorsPage";
 
@@ -9,8 +9,19 @@ interface Stats {
   hospitals: number;
   sessions: number;
   bookings: number;
+  lab_bookings?: number;
   kb_chunks: number;
   messages_logged: number;
+}
+
+interface LabBooking {
+  reference: string;
+  patient: string;
+  phone: string;
+  tests: { code: string; name: string; price: number }[];
+  total: number;
+  status: string;
+  created_at: string;
 }
 
 interface Booking {
@@ -30,7 +41,7 @@ interface Gap {
   at: string;
 }
 
-type Tab = "home" | "bookings" | "gaps" | "doctors";
+type Tab = "home" | "bookings" | "lab-bookings" | "gaps" | "doctors";
 
 function greeting() {
   const h = new Date().getHours();
@@ -48,8 +59,9 @@ function fmtDate(iso: string) {
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const [stats, setStats]           = useState<Stats | null>(null);
-  const [bookings, setBookings]     = useState<Booking[]>([]);
-  const [gaps, setGaps]             = useState<Gap[]>([]);
+  const [bookings, setBookings]       = useState<Booking[]>([]);
+  const [labBookings, setLabBookings] = useState<LabBooking[]>([]);
+  const [gaps, setGaps]               = useState<Gap[]>([]);
   const [health, setHealth]         = useState<any>(null);
   const [activeTab, setActiveTab]   = useState<Tab>("home");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -57,6 +69,7 @@ export default function AdminDashboard() {
   function refresh() {
     getStats().then(setStats).catch(() => {});
     getBookings().then(setBookings).catch(() => {});
+    getLabBookings().then(setLabBookings).catch(() => {});
     getGaps().then(setGaps).catch(() => {});
     getHealth().then(setHealth).catch(() => {});
   }
@@ -110,6 +123,8 @@ export default function AdminDashboard() {
             badge={stats?.consultants ? String(stats.consultants) : undefined} />
           <NavItem tab="bookings" active={activeTab} onClick={setActiveTab} icon={<BookIcon />}   label="Bookings"
             badge={bookings.length > 0 ? String(bookings.length) : undefined} />
+          <NavItem tab="lab-bookings" active={activeTab} onClick={setActiveTab} icon={<LabIcon />} label="Lab Bookings"
+            badge={labBookings.length > 0 ? String(labBookings.length) : undefined} />
           <NavItem tab="gaps"     active={activeTab} onClick={setActiveTab} icon={<AlertIcon />}  label="Knowledge Gaps"
             badge={gaps.length > 0 ? String(gaps.length) : undefined} badgeWarn />
         </nav>
@@ -209,6 +224,7 @@ export default function AdminDashboard() {
                     { value: stats?.hospitals,       label: "Hospitals",       icon: <HospitalIcon />, accent: "navy"   },
                     { value: stats?.sessions,        label: "Sessions",        icon: <CalIcon />,      accent: "green"  },
                     { value: stats?.bookings,        label: "Bookings",        icon: <TicketIcon />,   accent: "orange" },
+                    { value: stats?.lab_bookings,    label: "Lab Bookings",    icon: <LabIcon />,      accent: "purple" },
                     { value: stats?.kb_chunks,       label: "KB Chunks",       icon: <KbIcon />,       accent: "blue"   },
                     { value: stats?.messages_logged, label: "Messages Logged", icon: <ChatIcon />,     accent: "navy"   },
                   ] as const).map((k, i) => (
@@ -364,6 +380,52 @@ export default function AdminDashboard() {
                 )
             )}
 
+            {/* ── LAB BOOKINGS ── */}
+            {activeTab === "lab-bookings" && (
+              labBookings.length === 0
+                ? <EmptyState text="No lab test bookings yet." />
+                : (
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Reference</th>
+                          <th>Patient</th>
+                          <th>Phone</th>
+                          <th>Tests</th>
+                          <th>Total</th>
+                          <th>Status</th>
+                          <th>Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {labBookings.map(b => (
+                          <tr key={b.reference}>
+                            <td><code className="admin-ref">{b.reference}</code></td>
+                            <td>{b.patient}</td>
+                            <td>{b.phone}</td>
+                            <td>
+                              <div className="admin-lab-tests">
+                                {b.tests.map(t => (
+                                  <span key={t.code} className="admin-lab-test-chip">{t.code}</span>
+                                ))}
+                              </div>
+                            </td>
+                            <td>Rs {b.total.toLocaleString()}</td>
+                            <td>
+                              <span className={`admin-status-badge status-${b.status.toLowerCase()}`}>
+                                {b.status}
+                              </span>
+                            </td>
+                            <td>{new Date(b.created_at).toLocaleDateString("en-LK", { day: "numeric", month: "short", year: "numeric" })}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+            )}
+
             {/* ── KNOWLEDGE GAPS ── */}
             {activeTab === "gaps" && (
               gaps.length === 0
@@ -488,4 +550,14 @@ function RefreshIcon() {
 }
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+}
+function LabIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+      <path d="M9 3h6"/>
+      <path d="M9 3v8L5 17a2 2 0 0 0 1.75 3h10.5A2 2 0 0 0 19 17l-4-6V3"/>
+      <path d="M6.5 17h11"/>
+    </svg>
+  );
 }

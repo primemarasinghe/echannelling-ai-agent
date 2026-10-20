@@ -66,6 +66,12 @@ export const forgotPassword = (email) =>
     body: JSON.stringify({ email }),
   })
 
+export const resetPassword = (token, password) =>
+  req('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, password }),
+  })
+
 export const getProfile = () => req('/api/auth/me')
 
 export const updateProfile = (data) =>
@@ -109,3 +115,17 @@ export const completePayment  = (confirmationToken, orderId, paymentId = null, p
       patient_email: patientEmail,
     }),
   })
+
+export const initiateLabPayment = (patientName, patientPhone, patientEmail, tests) =>
+  req('/api/labtests/initiate', {
+    method: 'POST',
+    body: JSON.stringify({ patient_name: patientName, patient_phone: patientPhone, patient_email: patientEmail, tests }),
+  })
+
+export const completeLabPayment = (reference, orderId, paymentId = null, patientEmail = null) =>
+  req('/api/labtests/complete', {
+    method: 'POST',
+    body: JSON.stringify({ reference, order_id: orderId, payment_id: paymentId, patient_email: patientEmail }),
+  })
+
+export const getLabBookings = () => req('/api/labtests/bookings')

@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     payhere_merchant_id: str = ""
     payhere_merchant_secret: str = ""
     app_base_url: str = "http://localhost:8000"
+    frontend_url: str = "http://localhost:3000"
 
     # Gmail SMTP — use an App Password, not your regular Gmail password
     gmail_user: str = ""
