@@ -13,6 +13,7 @@ from app.config import get_settings
 from app.db import get_db
 from app.models import Consultant, User
 from app.services.auth_service import create_access_token, get_current_user
+from app.services.email_svc import send_password_reset
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 _settings = get_settings()
@@ -180,14 +181,21 @@ def forgot_password(body: ForgotBody, db: Session = Depends(get_db)):
     email = body.email.strip().lower()
     user  = db.query(User).filter(User.email == email).first()
 
-    # Always return 200 to avoid email enumeration
-    if user and user.password_hash:
+    if user:
+        if not user.password_hash:
+            # Google Sign-In account — no password to reset
+            return {"ok": False, "google_account": True,
+                    "message": "This account uses Google Sign-In. Please sign in with Google instead."}
         token = secrets.token_urlsafe(32)
         user.reset_token        = token
         user.reset_token_expiry = datetime.now(timezone.utc) + timedelta(hours=1)
         db.commit()
-        # TODO: send email with reset link containing token
-        # For now the token is stored — wire to an email service when ready
+        reset_link = f"{_settings.frontend_url}?reset_token={token}"
+        send_password_reset(
+            to_email=user.email,
+            reset_link=reset_link,
+            patient_name=user.name or "there",
+        )
 
     return {"ok": True, "message": "If that email exists, a reset link has been sent."}
 

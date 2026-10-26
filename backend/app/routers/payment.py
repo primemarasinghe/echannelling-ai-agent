@@ -231,12 +231,55 @@ def complete(req: CompleteRequest, current_user: User | None = Depends(get_optio
     }
 
 
+def _verify_ipn(form: dict, secret: str) -> bool:
+    """Verify PayHere IPN MD5 signature.
+    Formula: MD5(merchant_id + order_id + amount + currency + status_code + MD5(secret).upper()).upper()
+    """
+    try:
+        secret_md5 = hashlib.md5(secret.encode()).hexdigest().upper()
+        raw = (
+            form.get("merchant_id", "") +
+            form.get("order_id", "") +
+            form.get("payhere_amount", "") +
+            form.get("payhere_currency", "") +
+            form.get("status_code", "") +
+            secret_md5
+        )
+        expected = hashlib.md5(raw.encode()).hexdigest().upper()
+        return expected == form.get("md5sig", "").upper()
+    except Exception:
+        return False
+
+
 @router.post("/notify")
 async def notify(request: Request):
-    """PayHere IPN webhook — logged only in sandbox."""
+    """PayHere IPN webhook — verifies MD5 signature before processing."""
+    settings = get_settings()
     try:
         form = dict(await request.form())
-        _log.info("PayHere IPN: %s", form)
     except Exception as exc:
         _log.warning("IPN parse failed: %s", exc)
+        return {"status": "ok"}
+
+    # Reject if merchant secret is configured and signature doesn't match
+    if settings.payhere_merchant_secret:
+        if not _verify_ipn(form, settings.payhere_merchant_secret):
+            _log.warning("PayHere IPN rejected — invalid signature. order_id=%s",
+                         form.get("order_id"))
+            return {"status": "ok"}  # Always return 200 to PayHere
+
+    status_code = form.get("status_code")
+    order_id    = form.get("order_id", "")
+
+    if status_code == "2":
+        _log.info("PayHere IPN — payment successful: order=%s amount=%s %s",
+                  order_id, form.get("payhere_amount"), form.get("payhere_currency"))
+    elif status_code == "0":
+        _log.info("PayHere IPN — payment pending: order=%s", order_id)
+    elif status_code in ("-1", "-2", "-3"):
+        _log.warning("PayHere IPN — payment failed/cancelled: order=%s status=%s",
+                     order_id, status_code)
+    else:
+        _log.info("PayHere IPN received: %s", form)
+
     return {"status": "ok"}

@@ -8,6 +8,7 @@ interface Props {
   onNew: () => void
   onDelete: (id: string) => void
   onHome?: () => void
+  onBack?: () => void
   onOpenProfile?: () => void
   onSymptomChecker?: () => void
   user?: AuthUser | null
@@ -48,13 +49,26 @@ function formatTime(iso: string) {
 }
 
 export default function ChatHistory({
-  conversations, activeId, onSelect, onNew, onDelete, onHome, onOpenProfile, onSymptomChecker, user,
+  conversations, activeId, onSelect, onNew, onDelete, onHome, onBack, onOpenProfile, onSymptomChecker, user,
 }: Props) {
   const groups = groupConversations(conversations)
   const roleLabel = user?.role === 'admin' ? 'Admin' : user?.role === 'doctor' ? 'Doctor' : 'Patient'
 
   return (
     <aside className="chat-sidebar" aria-label="Navigation and conversation history">
+
+      {/* ── Back to results (from symptom checker booking handoff) ── */}
+      {onBack && (
+        <div className="chat-sb-back-wrap">
+          <button className="hp-sidebar-link chat-sb-back-btn chat-sb-back-results" onClick={onBack} aria-label="Back to symptom results">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            ← Symptom Results
+          </button>
+        </div>
+      )}
 
       {/* ── Back to home ── */}
       {onHome && (

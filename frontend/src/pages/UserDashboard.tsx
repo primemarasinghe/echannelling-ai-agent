@@ -89,7 +89,7 @@ function RefreshIcon() {
   );
 }
 
-export default function UserDashboard({ onHome, onSymptomChecker }: { onHome?: () => void; onSymptomChecker?: () => void }) {
+export default function UserDashboard({ onHome, onBack, onSymptomChecker, initialMessage, onMessageSent }: { onHome?: () => void; onBack?: () => void; onSymptomChecker?: () => void; initialMessage?: string; onMessageSent?: () => void }) {
   const sessionRef = useRef(newSessionId());
 
   const [messages,          setMessages]          = useState<any[]>([]);
@@ -116,6 +116,11 @@ export default function UserDashboard({ onHome, onSymptomChecker }: { onHome?: (
   }, [resetKey]);
 
   useEffect(() => {
+    if (initialMessage) doSubmit(initialMessage);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     const saveable = messages.filter((m: any) => m.role !== "booking_form");
     if (saveable.length > 0) save(sessionRef.current, saveable);
   }, [messages, save]);
@@ -123,6 +128,7 @@ export default function UserDashboard({ onHome, onSymptomChecker }: { onHome?: (
   async function doSubmit(text: string) {
     if (!text.trim() || busy) return;
 
+    onMessageSent?.();
     setPendingBookingIdx(null);
     setBusy(true);
     setMessages(m => [...m, { role: "user", content: text.trim() }]);
@@ -224,6 +230,7 @@ export default function UserDashboard({ onHome, onSymptomChecker }: { onHome?: (
           onNew={reset}
           onDelete={remove}
           onHome={onHome}
+          onBack={onBack}
           onOpenProfile={() => setProfileOpen(true)}
           onSymptomChecker={onSymptomChecker}
           user={user}

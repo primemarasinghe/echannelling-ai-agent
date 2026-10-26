@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
-from app.routers import auth, catalog, chat, doctors, payment, portal, symptoms
+from app.routers import auth, catalog, chat, doctors, labtests, payment, portal, symptoms
 from app.config import get_settings
 from app.db import Base, engine
 from app import models          # noqa: F401 — registers the tables
@@ -76,6 +76,7 @@ app.include_router(doctors.router)
 app.include_router(portal.router)
 app.include_router(payment.router)
 app.include_router(symptoms.router)
+app.include_router(labtests.router)
 
 @app.get("/")
 def root():

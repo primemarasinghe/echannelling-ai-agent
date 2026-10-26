@@ -1,58 +1,81 @@
 import { useState } from 'react'
-import BodyMap, { type BodyRegion, REGION_META, type BodyFocus } from '../components/BodyMap'
+import BodyMap, { type BodyRegion, REGION_META } from '../components/BodyMap'
 import SandboxPaymentSheet from '../components/SandboxPaymentSheet'
 import { useAuth } from '../context/AuthContext'
-import { getSymptomQuestions, analyzeSymptoms } from '../api'
+import { getSymptomQuestions, analyzeSymptoms, initiateLabPayment, completeLabPayment } from '../api'
 
 /* ── Symptom → body focus map (view, zoom, SVG y-centre 0-1500) ── */
-const SYMPTOM_FOCUS: Record<string, BodyFocus> = {
-  'Headache':                { view: 'front', zoom: 1.0, cy: 140 },
-  'Dizziness':               { view: 'front', zoom: 1.0, cy: 140 },
-  'Eye redness':             { view: 'front', zoom: 1.0, cy: 100 },
-  'Runny / Stuffy nose':     { view: 'front', zoom: 1.0, cy: 120 },
-  'Sore throat':             { view: 'front', zoom: 1.0, cy: 252 },
-  'Swollen lymph nodes':     { view: 'front', zoom: 1.0, cy: 260 },
-  'Cough':                   { view: 'front', zoom: 1.0, cy: 390 },
-  'Shortness of breath':     { view: 'front', zoom: 1.0, cy: 390 },
-  'Chest pain':              { view: 'front', zoom: 1.0, cy: 390 },
-  'Loss of appetite':        { view: 'front', zoom: 1.0, cy: 450 },
-  'Nausea / Vomiting':       { view: 'front', zoom: 1.0, cy: 580 },
-  'Abdominal pain':          { view: 'front', zoom: 1.0, cy: 590 },
-  'Diarrhea':                { view: 'front', zoom: 1.0, cy: 660 },
-  'Frequent urination':      { view: 'front', zoom: 1.0, cy: 710 },
-  'Back pain':               { view: 'back',  zoom: 1.0, cy: 460 },
-  'Numbness / Tingling':     { view: 'front', zoom: 1.0, cy: 750 },
-  'Skin rash / Itching':     { view: 'front', zoom: 1.0, cy: 750 },
-  'Body aches / Joint pain': { view: 'front', zoom: 1.0, cy: 750 },
-  'Fatigue / Weakness':      { view: 'front', zoom: 1.0, cy: 750 },
-  'Fever / Chills':          { view: 'front', zoom: 1.0, cy: 750 },
-  'Body pain':               { view: 'front', zoom: 1.0, cy: 750 },
-}
 
 /* ── Symptom list ──────────────────────────────────────────── */
-const SYMPTOMS = [
-  { en: 'Headache',                    si: 'ඔලුව කැක්කුම'                       },
-  { en: 'Fever / Chills',              si: 'උණ'                                  },
-  { en: 'Body aches / Joint pain',     si: 'සන්ධි වේදනාව'                        },
-  { en: 'Fatigue / Weakness',          si: 'තෙහෙට්ටුව'                           },
-  { en: 'Cough',                       si: 'කැස්ස'                                },
-  { en: 'Sore throat',                 si: 'උගුරේ අමාරුව'                        },
-  { en: 'Runny / Stuffy nose',         si: 'සෙම්ප්‍රතිශ්‍යාව'                   },
-  { en: 'Shortness of breath',         si: 'හුස්ම ගැනීමේ අපහසුව'                },
-  { en: 'Chest pain',                  si: 'පපුවේ අමාරුව'                        },
-  { en: 'Nausea / Vomiting',           si: 'ඔක්කාරය / වමනය'                      },
-  { en: 'Diarrhea',                    si: 'පාචනය'                               },
-  { en: 'Abdominal pain',              si: 'බඩේ අමාරුව'                          },
-  { en: 'Loss of appetite',            si: 'ආහාර අරුචිය'                         },
-  { en: 'Dizziness',                   si: 'කරකැවිල්ල'                           },
-  { en: 'Skin rash / Itching',         si: 'සමේ කැසීම'                           },
-  { en: 'Back pain',                   si: 'කොන්දේ අමාරුව'                       },
-  { en: 'Frequent urination',          si: 'නිතර මුත්‍රා'                        },
-  { en: 'Swollen lymph nodes',         si: 'වසා ගැටිති ඉදිමීම'                   },
-  { en: 'Eye redness',                 si: 'ඇස් රතු වීම'                         },
-  { en: 'Numbness / Tingling',         si: 'හිරිවැටීම'                           },
-  { en: 'Body pain',                   si: 'ඇඟේ අමාරුව'                          },
+const SYMPTOM_GROUPS = [
+  {
+    label: 'Head & Senses',
+    icon: '🧠',
+    items: [
+      { en: 'Headache',           si: 'ඔලුව කැක්කුම'           },
+      { en: 'Dizziness',          si: 'කරකැවිල්ල'               },
+      { en: 'Eye pain / Redness', si: 'ඇස් රතු වීම / වේදනාව'   },
+      { en: 'Ear pain',           si: 'කන් වේදනාව'              },
+    ],
+  },
+  {
+    label: 'Throat & Breathing',
+    icon: '🫁',
+    items: [
+      { en: 'Sore throat',          si: 'උගුරේ අමාරුව'           },
+      { en: 'Runny / Stuffy nose',  si: 'සෙම්ප්‍රතිශ්‍යාව'      },
+      { en: 'Cough',                si: 'කැස්ස'                  },
+      { en: 'Shortness of breath',  si: 'හුස්ම ගැනීමේ අපහසුව'   },
+    ],
+  },
+  {
+    label: 'Chest & Heart',
+    icon: '❤️',
+    items: [
+      { en: 'Chest pain',           si: 'පපුවේ අමාරුව'           },
+      { en: 'Swollen lymph nodes',  si: 'වසා ගැටිති ඉදිමීම'     },
+    ],
+  },
+  {
+    label: 'Stomach & Digestion',
+    icon: '🫃',
+    items: [
+      { en: 'Nausea / Vomiting',    si: 'ඔක්කාරය / වමනය'        },
+      { en: 'Abdominal pain',       si: 'බඩේ අමාරුව'             },
+      { en: 'Diarrhea',             si: 'පාචනය'                  },
+      { en: 'Loss of appetite',     si: 'ආහාර අරුචිය'            },
+    ],
+  },
+  {
+    label: 'Urinary & Bladder',
+    icon: '💧',
+    items: [
+      { en: 'Frequent urination',       si: 'නිතර මුත්‍රා'              },
+      { en: 'Bladder / Urinary pain',   si: 'මුත්‍රාශ / මුත්‍රා වේදනාව' },
+    ],
+  },
+  {
+    label: 'Muscles & Joints',
+    icon: '🦴',
+    items: [
+      { en: 'Body aches / Joint pain',  si: 'සන්ධි වේදනාව'       },
+      { en: 'Back pain',                si: 'කොන්දේ අමාරුව'       },
+      { en: 'Knee pain',                si: 'දණහිස් වේදනාව'       },
+      { en: 'Numbness / Tingling',      si: 'හිරිවැටීම'           },
+    ],
+  },
+  {
+    label: 'General',
+    icon: '🌡️',
+    items: [
+      { en: 'Fever / Chills',       si: 'උණ'                     },
+      { en: 'Fatigue / Weakness',   si: 'තෙහෙට්ටුව'               },
+      { en: 'Body pain',            si: 'ඇඟේ අමාරුව'             },
+      { en: 'Skin rash / Itching',  si: 'සමේ කැසීම'              },
+    ],
+  },
 ]
+const SYMPTOMS = SYMPTOM_GROUPS.flatMap(g => g.items)
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface LabTest { code:string; name:string; price:number; reason:string; selected:boolean }
@@ -72,12 +95,12 @@ interface Question {
   options: string[]
 }
 
-interface Props { onBack: () => void }
+interface Props { onBack: () => void; onBookSpecialist?: (specialist: string) => void }
 
 const STEPS = ['Symptoms','Body Areas','Your Info','Questions','Results','Payment']
 
 /* ═══════════════════════════════════════════════════════════ */
-export default function SymptomChecker({ onBack }: Props) {
+export default function SymptomChecker({ onBack, onBookSpecialist }: Props) {
   const { user } = useAuth()
   const [step, setStep] = useState(0)
 
@@ -86,11 +109,13 @@ export default function SymptomChecker({ onBack }: Props) {
   // Step 2
   const [bodyAreas,    setBodyAreas]    = useState<Record<string,BodyRegion[]>>({})
   const [symIdx,       setSymIdx]       = useState(0)
+  const [hoveredReg,   setHoveredReg]   = useState<BodyRegion | null>(null)
   // Step 3
   const [patientName,  setPatientName]  = useState(user?.name ?? '')
   const [age,          setAge]          = useState('')
   const [gender,       setGender]       = useState('')
   const [duration,     setDuration]     = useState('')
+  const [phone,        setPhone]        = useState(user?.phone ?? '')
   // Step 4
   const [questions,    setQuestions]    = useState<Question[]>([])
   const [answers,      setAnswers]      = useState<Record<string,string[]>>({})
@@ -102,8 +127,10 @@ export default function SymptomChecker({ onBack }: Props) {
   const [rLoading,     setRLoading]     = useState(false)
   const [rError,       setRError]       = useState('')
   // Step 6
-  const [payState,     setPayState]     = useState<'idle'|'sheet'|'paid'>('idle')
+  const [payState,     setPayState]     = useState<'idle'|'sheet'|'confirming'|'paid'>('idle')
   const [payRef,       setPayRef]       = useState('')
+  const [payInitData,  setPayInitData]  = useState<Record<string,string>|null>(null)
+  const [payInitErr,   setPayInitErr]   = useState('')
 
   /* helpers */
   function toggleSym(en:string) {
@@ -164,9 +191,32 @@ export default function SymptomChecker({ onBack }: Props) {
     } finally { setRLoading(false) }
   }
 
-  function handlePaid(_o:string, _e:string) {
-    setPayRef('LAB'+Math.random().toString(36).slice(2,10).toUpperCase())
-    setPayState('paid')
+  async function startLabPayment() {
+    setPayInitErr('')
+    setPayState('sheet')
+    try {
+      const data = await initiateLabPayment(
+        patientName, phone, user?.email ?? null,
+        selectedTests.map(t=>({code:t.code,name:t.name,price:t.price}))
+      )
+      setPayInitData(data)
+    } catch(e:any) {
+      setPayInitErr(e.message||'Could not start payment.')
+      setPayState('idle')
+    }
+  }
+
+  async function handlePaid(_o:string, email:string) {
+    if (!payInitData) return
+    setPayState('confirming')
+    try {
+      const res = await completeLabPayment(payInitData.reference, payInitData.order_id, null, email||null)
+      setPayRef(res.reference)
+      setPayState('paid')
+    } catch(e:any) {
+      setPayInitErr(e.message||'Booking confirmation failed.')
+      setPayState('idle')
+    }
   }
 
   /* ── STEP 0: Symptoms ─────────────────────────────────── */
@@ -175,31 +225,51 @@ export default function SymptomChecker({ onBack }: Props) {
       <Header onBack={onBack}/>
       <Progress step={0}/>
       <div className="sc-body">
-        <div className="sc-section-head">
-          <div className="sc-num">01</div>
-          <div>
-            <div className="sc-title">Select Your Symptoms</div>
-            <div className="sc-sub">ඔබේ රෝග ලක්ෂණ තෝරන්න · Choose all that apply</div>
+        <div className="sc-sym-header">
+          <div className="sc-sym-header-text">
+            <div className="sc-sym-header-title">Select Your Symptoms</div>
+            <div className="sc-sym-header-sub">ඔබේ රෝග ලක්ෂණ තෝරන්න · Choose all that apply</div>
           </div>
+          {selectedSymptoms.length > 0 && (
+            <div className="sc-sym-badge">
+              {selectedSymptoms.length} selected
+            </div>
+          )}
         </div>
-        <div className="sc-sym-grid">
-          {SYMPTOMS.map(s=>(
-            <button key={s.en}
-              className={`sc-sym-btn${selectedSymptoms.includes(s.en)?' sc-sym-on':''}`}
-              onClick={()=>toggleSym(s.en)}>
-              <div className={`sc-sym-chk${selectedSymptoms.includes(s.en)?' on':''}`}>
-                {selectedSymptoms.includes(s.en)&&'✓'}
+
+        <div className="sc-sym-groups">
+          {SYMPTOM_GROUPS.map(g => (
+            <div key={g.label} className="sc-sym-group">
+              <div className="sc-sym-group-hd">
+                <span className="sc-sym-group-icon">{g.icon}</span>
+                <span className="sc-sym-group-label">{g.label}</span>
               </div>
-              <div>
-                <div className="sc-sym-en">{s.en}</div>
-                <div className="sc-sym-si">{s.si}</div>
+              <div className="sc-sym-grid">
+                {g.items.map(s => {
+                  const on = selectedSymptoms.includes(s.en)
+                  return (
+                    <button key={s.en}
+                      className={`sc-sym-btn${on ? ' sc-sym-on' : ''}`}
+                      onClick={() => toggleSym(s.en)}>
+                      <div className={`sc-sym-chk${on ? ' on' : ''}`}>
+                        {on && (
+                          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5"
+                            strokeLinecap="round" strokeLinejoin="round" width="9" height="9">
+                            <polyline points="2 6 5 9 10 3"/>
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <div className="sc-sym-en">{s.en}</div>
+                        <div className="sc-sym-si">{s.si}</div>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
-            </button>
+            </div>
           ))}
         </div>
-        {selectedSymptoms.length>0&&(
-          <div className="sc-sel-count">{selectedSymptoms.length} symptom{selectedSymptoms.length>1?'s':''} selected</div>
-        )}
       </div>
       <Footer
         onBack={onBack} backLabel="← Home"
@@ -221,12 +291,10 @@ export default function SymptomChecker({ onBack }: Props) {
         <Header onBack={()=>setStep(0)}/>
         <Progress step={1}/>
         <div className="sc-body">
-          <div className="sc-section-head">
+          <div className="sc-section-center">
             <div className="sc-num">02</div>
-            <div>
-              <div className="sc-title">Select Body Area</div>
-              <div className="sc-sub">ශරීරයේ ස්ථාන සලකුණු කරන්න</div>
-            </div>
+            <div className="sc-title">Select Body Area</div>
+            <div className="sc-sub">ශරීරයේ ස්ථාන සලකුණු කරන්න</div>
           </div>
 
           {/* symptom tabs */}
@@ -246,18 +314,39 @@ export default function SymptomChecker({ onBack }: Props) {
           <div className="sc-body-layout">
             {/* Selected areas panel — LEFT */}
             <div className="sc-areas-col">
-              <div className="sc-areas-title">Selected areas</div>
+              <div className="sc-areas-title">
+                Selected areas
+                {areas.length>0&&<span className="sc-areas-count">{areas.length}</span>}
+              </div>
               {areas.length===0
-                ? <div className="sc-areas-empty">No area selected yet.<br/>Click the body diagram.</div>
-                : (
-                  <div className="sc-area-chips">
+                ? (
+                  <div className="sc-areas-empty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+                      strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                      <circle cx="12" cy="9" r="2.5"/>
+                    </svg>
+                    No area selected yet
+                    <span>Click the body diagram</span>
+                  </div>
+                ) : (
+                  <div className="sc-area-cards">
                     {areas.map(a=>{
                       const meta = REGION_META.find(r=>r.id===a)
                       return (
-                        <span key={a} className="sc-chip">
-                          {meta?.label??a}
-                          <button onClick={()=>toggleArea(sym,a)}>×</button>
-                        </span>
+                        <div key={a} className="sc-area-card">
+                          <div className="sc-area-card-dot"/>
+                          <div className="sc-area-card-body">
+                            <div className="sc-area-card-name">{meta?.label??a}</div>
+                            <div className="sc-area-card-si">{meta?.si}</div>
+                          </div>
+                          <button className="sc-area-card-rm" onClick={()=>toggleArea(sym,a)} aria-label="Remove">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                              strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        </div>
                       )
                     })}
                   </div>
@@ -285,14 +374,49 @@ export default function SymptomChecker({ onBack }: Props) {
               )}
             </div>
 
-            {/* Body map — RIGHT */}
+            {/* Body map — MIDDLE */}
             <div className="sc-map-col">
               <div className="sc-map-label">Tap a region for: <strong>{sym}</strong></div>
               <BodyMap
                 selected={areas}
                 onToggle={r=>toggleArea(sym,r)}
-                focus={SYMPTOM_FOCUS[sym]}
+                onHover={setHoveredReg}
               />
+            </div>
+
+            {/* Hover info panel — RIGHT */}
+            <div className="sc-hover-col">
+              <div className="sc-hover-panel">
+                {hoveredReg ? (() => {
+                  const m   = REGION_META.find(r => r.id === hoveredReg)
+                  const sel = areas.includes(hoveredReg)
+                  return (
+                    <>
+                      <div className={`sc-hover-indicator${sel ? ' sel' : ''}`}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                          strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                      </div>
+                      <div className="sc-hover-name">{m?.label ?? hoveredReg}</div>
+                      <div className="sc-hover-si">{m?.si}</div>
+                      {sel
+                        ? <div className="sc-hover-badge sel">✓ Selected</div>
+                        : <div className="sc-hover-badge">Tap to select</div>
+                      }
+                    </>
+                  )
+                })() : (
+                  <div className="sc-hover-empty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+                      strokeLinecap="round" strokeLinejoin="round" width="28" height="28">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                      <path d="M12 8v4m0 4h.01"/>
+                    </svg>
+                    <span>Hover over a body region</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -313,50 +437,135 @@ export default function SymptomChecker({ onBack }: Props) {
       <Header onBack={()=>setStep(1)}/>
       <Progress step={2}/>
       <div className="sc-body sc-body-narrow">
-        <div className="sc-section-head">
-          <div className="sc-num">03</div>
+
+        <div className="sc-pi-hero">
+          <div className="sc-pi-hero-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+              strokeLinecap="round" strokeLinejoin="round" width="28" height="28">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
           <div>
-            <div className="sc-title">Patient Information</div>
-            <div className="sc-sub">රෝගියාගේ තොරතුරු</div>
+            <div className="sc-pi-hero-title">Patient Information</div>
+            <div className="sc-pi-hero-sub">රෝගියාගේ තොරතුරු · Tell us about the patient</div>
           </div>
         </div>
-        <div className="sc-form">
-          <div className="sc-field">
-            <label className="sc-lbl">Full Name</label>
-            <input className="sc-inp" value={patientName}
-              onChange={e=>setPatientName(e.target.value)} placeholder="Your full name"/>
-          </div>
-          <div className="sc-row2">
-            <div className="sc-field">
-              <label className="sc-lbl">Age</label>
-              <input className="sc-inp" type="number" min="1" max="120"
-                value={age} onChange={e=>setAge(e.target.value)} placeholder="e.g. 35"/>
+
+        <div className="sc-pi-card">
+          {/* Name */}
+          <div className="sc-pi-field">
+            <div className="sc-pi-field-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
             </div>
-            <div className="sc-field">
-              <label className="sc-lbl">Gender</label>
-              <select className="sc-inp" value={gender} onChange={e=>setGender(e.target.value)}>
-                <option value="">Select</option>
-                <option>Male</option>
-                <option>Female</option>
+            <div className="sc-pi-field-body">
+              <label className="sc-pi-lbl">Full Name</label>
+              <input className="sc-pi-inp" value={patientName}
+                onChange={e=>setPatientName(e.target.value)}
+                placeholder="Enter full name"/>
+            </div>
+          </div>
+
+          <div className="sc-pi-divider"/>
+
+          {/* Phone */}
+          <div className="sc-pi-field">
+            <div className="sc-pi-field-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.4a16 16 0 0 0 6.69 6.69l1.06-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </div>
+            <div className="sc-pi-field-body">
+              <label className="sc-pi-lbl">Phone Number</label>
+              <input className="sc-pi-inp" type="tel" value={phone}
+                onChange={e=>setPhone(e.target.value)}
+                placeholder="07X XXX XXXX"/>
+            </div>
+          </div>
+
+          <div className="sc-pi-divider"/>
+
+          {/* Age + Gender */}
+          <div className="sc-pi-row2">
+            <div className="sc-pi-field">
+              <div className="sc-pi-field-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <div className="sc-pi-field-body">
+                <label className="sc-pi-lbl">Age</label>
+                <input className="sc-pi-inp" type="number" min="1" max="120"
+                  value={age} onChange={e=>setAge(e.target.value)} placeholder="e.g. 35"/>
+              </div>
+            </div>
+            <div className="sc-pi-divider-v"/>
+            <div className="sc-pi-field">
+              <div className="sc-pi-field-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 8v8m-4-4h8"/>
+                </svg>
+              </div>
+              <div className="sc-pi-field-body">
+                <label className="sc-pi-lbl">Gender</label>
+                <select className="sc-pi-inp" value={gender} onChange={e=>setGender(e.target.value)}>
+                  <option value="">Select</option>
+                  <option>Male</option>
+                  <option>Female</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="sc-pi-divider"/>
+
+          {/* Duration */}
+          <div className="sc-pi-field">
+            <div className="sc-pi-field-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div className="sc-pi-field-body">
+              <label className="sc-pi-lbl">How long have you had these symptoms?</label>
+              <select className="sc-pi-inp" value={duration} onChange={e=>setDuration(e.target.value)}>
+                <option value="">Select duration</option>
+                <option>Less than 24 hours</option>
+                <option>1–3 days</option>
+                <option>4–7 days</option>
+                <option>1–2 weeks</option>
+                <option>More than 2 weeks</option>
               </select>
             </div>
           </div>
-          <div className="sc-field">
-            <label className="sc-lbl">Symptom duration</label>
-            <select className="sc-inp" value={duration} onChange={e=>setDuration(e.target.value)}>
-              <option value="">Select duration</option>
-              <option>Less than 24 hours</option>
-              <option>1–3 days</option>
-              <option>4–7 days</option>
-              <option>1–2 weeks</option>
-              <option>More than 2 weeks</option>
-            </select>
+        </div>
+
+        {/* Summary of selected symptoms */}
+        <div className="sc-pi-summary">
+          <div className="sc-pi-summary-lbl">Symptoms being analysed</div>
+          <div className="sc-pi-summary-chips">
+            {selectedSymptoms.map(s=>(
+              <span key={s} className="sc-pi-chip">{s}</span>
+            ))}
           </div>
         </div>
+
       </div>
       <Footer onBack={()=>setStep(1)} backLabel="← Back"
         onNext={goToQuestions} nextLabel="Next →"
-        nextDisabled={!patientName||!age||!gender||!duration}/>
+        nextDisabled={!patientName||!phone||!age||!gender||!duration}/>
     </div>
   )
 
@@ -646,9 +855,17 @@ export default function SymptomChecker({ onBack }: Props) {
               <div className="sc-specialist-lbl">Recommended Specialist</div>
               <div className="sc-specialist-name">{result.specialist}</div>
             </div>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16" style={{color:'#9ca3af',flexShrink:0}}>
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
+            {onBookSpecialist && (
+              <button
+                className="sc-book-specialist-btn"
+                onClick={() => onBookSpecialist(result.specialist)}
+              >
+                Book Now
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="13" height="13">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* ── Disclaimer ── */}
@@ -688,7 +905,7 @@ export default function SymptomChecker({ onBack }: Props) {
               <span>Total Paid</span><span>Rs. {totalPrice.toLocaleString()}</span>
             </div>
           </div>
-          <div className="sc-paid-note">Sandbox — no real charge was made</div>
+          <div className="sc-paid-note">Visit Nawaloka Hospital Laboratory with this reference number</div>
           <button className="sc-btn-pri" onClick={onBack}>Back to Dashboard</button>
         </div>
       </div>
@@ -698,10 +915,10 @@ export default function SymptomChecker({ onBack }: Props) {
       <div className="sc-wrap">
         <Header onBack={()=>setStep(4)}/>
         <Progress step={5}/>
-        {payState==='sheet'&&(
+        {payState==='sheet'&&payInitData&&(
           <SandboxPaymentSheet
-            amount={String(totalPrice)} currency="LKR"
-            description={`Lab Tests — ${selectedTests.map(t=>t.code).join(', ')}`}
+            amount={payInitData.amount ?? String(totalPrice)} currency="LKR"
+            description={payInitData.items ?? `Lab Tests — ${selectedTests.map(t=>t.code).join(', ')}`}
             defaultEmail={user?.email??''}
             onPay={handlePaid}
             onDismiss={()=>setPayState('idle')}
@@ -725,10 +942,12 @@ export default function SymptomChecker({ onBack }: Props) {
               <span>Total</span><span>Rs. {totalPrice.toLocaleString()}</span>
             </div>
           </div>
+          {payInitErr && <div className="sc-err-box" style={{marginTop:12}}>{payInitErr}</div>}
         </div>
         <Footer onBack={()=>setStep(4)} backLabel="← Back"
-          onNext={()=>setPayState('sheet')}
-          nextLabel={`Pay Rs. ${totalPrice.toLocaleString()}`}/>
+          onNext={startLabPayment}
+          nextLabel={payState==='sheet'||payState==='confirming' ? 'Processing…' : `Pay Rs. ${totalPrice.toLocaleString()}`}
+          nextDisabled={payState==='sheet'||payState==='confirming'}/>
       </div>
     )
   }

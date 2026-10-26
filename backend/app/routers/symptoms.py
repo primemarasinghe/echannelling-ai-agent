@@ -39,6 +39,12 @@ LAB_CATALOG = [
     {"code": "MALARIA",      "name": "Malaria Antigen Test",                 "price": 2400, "indicates": "cyclical fever (alternate days), travel to endemic area, chills with rigors"},
     {"code": "WIDAL",        "name": "Widal Test (Typhoid)",                 "price": 1600, "indicates": "prolonged fever >1 week, rose spots, relative bradycardia, typhoid exposure"},
     {"code": "URINE_CS",     "name": "Urine Culture & Sensitivity",          "price": 2200, "indicates": "recurrent UTI, fever with urinary symptoms, antibiotic selection"},
+    {"code": "ANA",          "name": "Antinuclear Antibody (ANA)",            "price": 4200, "indicates": "autoimmune joint disease, multiple joint swelling, skin rash with joint pain"},
+    {"code": "RF",           "name": "Rheumatoid Factor (RF)",                "price": 2400, "indicates": "symmetrical small joint swelling, morning stiffness lasting >1 hour"},
+    {"code": "XRAY_JOINT",   "name": "X-Ray of Affected Joint",               "price": 2800, "indicates": "knee, ankle, or toe pain after injury, suspected fracture or severe arthritis"},
+    {"code": "THROAT_CS",    "name": "Throat Swab Culture & Sensitivity",     "price": 2000, "indicates": "recurrent tonsillitis, severe sore throat not improving, suspected strep"},
+    {"code": "EYE_SWAB",     "name": "Conjunctival Swab Culture",             "price": 1800, "indicates": "eye discharge, suspected bacterial conjunctivitis not responding to treatment"},
+    {"code": "AUDIOGRAM",    "name": "Pure Tone Audiogram",                   "price": 3500, "indicates": "reduced hearing, ear blockage with no infection, ringing in the ears (tinnitus)"},
 ]
 
 _CODE_MAP = {t["code"]: t for t in LAB_CATALOG}
@@ -127,18 +133,48 @@ _CLINICAL: dict[str, dict] = {
         "trigger_opts": ["During exercise or physical activity", "At night or early morning", "In dusty, smoky, or cold environments", "When lying flat", "No clear trigger"],
         "differentials": ["Viral upper respiratory infection (cold/flu)", "Asthma or reactive airways", "Pneumonia", "Allergic rhinitis", "COVID-19"],
     },
+    "eye": {
+        "red_flag": "Do you have sudden loss or blurring of vision, severe eye pain with nausea, or did a chemical splash into your eye?",
+        "char_q": "How would you describe the eye problem?",
+        "char_opts": ["Redness without any discharge", "Redness with sticky or watery discharge", "Eye pain or aching behind the eye", "Blurred or reduced vision", "Sensitivity to light (hurts to open eyes in bright light)"],
+        "assoc_opts": ["Headache", "Fever or recent cold/flu", "Both eyes affected (not just one)", "Contact lens use", "Itching and watering (allergy-type)", "Recent eye trauma or foreign body", "None of these"],
+        "trigger_q": "What makes the eye problem worse or when did you notice it most?",
+        "trigger_opts": ["After prolonged screen or reading time", "In dusty, smoky, or windy environments", "During pollen season or near animals", "After swimming or contact lens wear", "In bright light or sunlight", "No clear trigger"],
+        "differentials": ["Conjunctivitis (viral or bacterial)", "Allergic conjunctivitis", "Dry eye syndrome", "Acute angle-closure glaucoma (severe pain + vision loss)", "Corneal abrasion or foreign body"],
+    },
+    "ent": {
+        "red_flag": "Do you have difficulty swallowing with drooling, a muffled voice, or noisy breathing — suggesting a blocked airway?",
+        "char_q": "What best describes your main problem?",
+        "char_opts": ["Ear pain or discharge from the ear", "Blocked ears or reduced hearing", "Runny or blocked nose with or without facial pain", "Sore throat or difficulty swallowing", "Mouth ulcers, jaw pain, or dental pain"],
+        "assoc_opts": ["Fever or chills", "Facial pressure or pain over the cheeks or forehead (sinuses)", "Ringing or buzzing in the ears (tinnitus)", "Dizziness or loss of balance", "Bad breath", "Recent cold or upper respiratory infection", "None of these"],
+        "trigger_q": "Do any of the following apply?",
+        "trigger_opts": ["Started during or after a cold or flu", "After swimming or water exposure in the ear", "During a dusty season or allergy flare", "After a dental procedure or tooth pain", "Exposure to loud noise recently", "No clear trigger"],
+        "differentials": ["Otitis media (middle ear infection)", "Acute sinusitis", "Tonsillitis or pharyngitis", "Allergic rhinitis", "Temporomandibular joint (TMJ) disorder"],
+    },
+    "joint": {
+        "red_flag": "Is one joint hot, severely swollen, and very painful with a fever — which can indicate a joint infection requiring urgent treatment?",
+        "char_q": "How would you describe the joint pain?",
+        "char_opts": ["Sharp pain that worsens with movement or weight bearing", "Dull aching that is worse after rest or first thing in the morning", "Swelling, warmth, and redness over the joint", "Stiffness in the morning that eases after moving around", "Sudden severe pain in a single joint (especially the big toe or ankle)"],
+        "assoc_opts": ["Swelling visible around the joint", "Skin redness or warmth over the joint", "Fever or feeling unwell", "Multiple joints affected at the same time", "Recent injury, fall, or twisting of the joint", "Clicking or locking sensation in the joint", "None of these"],
+        "trigger_q": "What makes the joint pain worse?",
+        "trigger_opts": ["Walking, standing, or going up stairs", "After prolonged sitting or inactivity", "In the morning on first getting up", "After eating red meat, seafood, or alcohol (gout trigger)", "Changes in weather (cold or damp)", "No clear trigger"],
+        "differentials": ["Osteoarthritis", "Gout or pseudogout (crystal arthropathy)", "Septic arthritis (joint infection — urgent)", "Ligament sprain or meniscal tear (knee)", "Rheumatoid arthritis"],
+    },
 }
 
 
 def _pick_context(symptoms: list[str], body_areas: dict) -> dict:
     combined = (" ".join(symptoms) + " " + str(body_areas)).lower()
     priority = [
-        ("chest",       ["chest pain", "chest", "palpitation"]),
-        ("headache",    ["headache", "head", "migraine", "dizziness"]),
+        ("chest",       ["chest pain", "chest", "palpitation", "chest-right", "chest-left"]),
+        ("headache",    ["headache", "head", "migraine", "dizziness", "head-right", "head-left"]),
+        ("eye",         ["eye", "right-eye", "left-eye", "vision", "blurred"]),
+        ("ent",         ["ear", "right-ear", "left-ear", "nose", "mouth", "throat", "sinus", "hearing", "tinnitus"]),
         ("fever",       ["fever", "chills", "temperature", "dengue"]),
-        ("respiratory", ["cough", "breath", "shortness", "throat", "respiratory"]),
+        ("respiratory", ["cough", "breath", "shortness", "respiratory"]),
         ("abdomen",     ["abdomen", "abdominal", "stomach", "nausea", "vomiting", "diarrhea", "diarrh"]),
-        ("back",        ["back pain", "back", "lower-back", "spine", "sciatica"]),
+        ("back",        ["back pain", "back", "lower-back", "spine", "sciatica", "upper-back"]),
+        ("joint",       ["knee", "right-knee", "left-knee", "toes", "right-toes", "left-toes", "joint", "gout", "swollen joint", "ankle", "wrist"]),
         ("urinary",     ["urinary", "urination", "urine", "bladder", "frequent"]),
         ("fatigue",     ["fatigue", "weakness", "tired", "exhausted"]),
         ("skin",        ["skin", "rash", "itching", "itch"]),

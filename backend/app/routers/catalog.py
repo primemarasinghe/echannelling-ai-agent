@@ -4,25 +4,27 @@ from sqlalchemy.orm import Session as OrmSession, joinedload
 
 from app.db import get_db
 from app.models import (Booking, Consultant, Conversation, Hospital,
-                        KBChunk, KnowledgeGap, Session)
+                        KBChunk, KnowledgeGap, LabTestBooking, Session, User)
+from app.services.auth_service import require_admin
 
 router = APIRouter(prefix="/api", tags=["catalog"])
 
 
 @router.get("/stats")
-def stats(db: OrmSession = Depends(get_db)):
+def stats(db: OrmSession = Depends(get_db), _: User = Depends(require_admin)):
     return {
         "consultants": db.scalar(select(func.count()).select_from(Consultant)),
         "hospitals": db.scalar(select(func.count()).select_from(Hospital)),
         "sessions": db.scalar(select(func.count()).select_from(Session)),
         "bookings": db.scalar(select(func.count()).select_from(Booking)),
+        "lab_bookings": db.scalar(select(func.count()).select_from(LabTestBooking)),
         "kb_chunks": db.scalar(select(func.count()).select_from(KBChunk)),
         "messages_logged": db.scalar(select(func.count()).select_from(Conversation)),
     }
 
 
 @router.get("/gaps")
-def knowledge_gaps(db: OrmSession = Depends(get_db)):
+def knowledge_gaps(db: OrmSession = Depends(get_db), _: User = Depends(require_admin)):
     """Return the 50 most recent queries that found no KB results."""
     rows = db.execute(
         select(KnowledgeGap)
@@ -41,7 +43,7 @@ def knowledge_gaps(db: OrmSession = Depends(get_db)):
 
 
 @router.get("/bookings")
-def bookings(db: OrmSession = Depends(get_db)):
+def bookings(db: OrmSession = Depends(get_db), _: User = Depends(require_admin)):
     rows = db.execute(
         select(Booking)
         .options(joinedload(Booking.session).joinedload(Session.consultant))
